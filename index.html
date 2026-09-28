@@ -31,7 +31,6 @@
             overflow: hidden;
         }
 
-        /* מעטפת הצ'אט הראשי */
         .chat-container {
             width: 100%;
             height: 100%;
@@ -41,10 +40,9 @@
             position: relative;
         }
 
-        /* התאמה למסכי מחשב רחבים - מראה ממוקד כמו וואטסאפ-ווב */
         @media (min-width: 768px) {
             body {
-                background-color: #dadbd4; /* רקע מסביב למסך במחשב */
+                background-color: #dadbd4;
             }
             .chat-container {
                 max-width: 700px;
@@ -55,7 +53,6 @@
             }
         }
 
-        /* כותרת עליונה */
         .chat-header {
             background-color: #008069;
             color: white;
@@ -90,7 +87,6 @@
             background-color: rgba(255, 255, 255, 0.3);
         }
 
-        /* אזור ההודעות */
         .chat-messages {
             flex: 1;
             padding: 16px;
@@ -140,7 +136,6 @@
             margin-top: 4px;
         }
 
-        /* שורת הקלדה בתחתית */
         .chat-input-area {
             background-color: var(--whatsapp-gray);
             padding: 10px 16px;
@@ -214,7 +209,6 @@
             background-color: #01755c;
         }
 
-        /* חתימה פדגוגית בתחתית */
         .footer-signature {
             text-align: center;
             font-size: 10px;
@@ -224,7 +218,6 @@
             border-top: 1px solid #e9edef;
         }
 
-        /* ספינר טעינה */
         .loading {
             text-align: center;
             color: #667781;
@@ -236,7 +229,6 @@
 <body>
 
     <div class="chat-container">
-        <!-- כותרת -->
         <div class="chat-header">
             <div class="chat-title">
                 <span>💬</span> גשר שפות – חדר שיחה
@@ -244,18 +236,16 @@
             <button class="admin-btn" onclick="openAdminPanel()">ניהול ⚙️</button>
         </div>
 
-        <!-- אזור הודעות -->
         <div id="messagesContainer" class="chat-messages">
             <div class="loading">טוען הודעות...</div>
         </div>
 
-        <!-- אזור שליחה -->
         <div class="chat-input-area">
             <div class="input-controls-row">
                 <div class="lang-selector">
                     <span>שפת הקלדה:</span>
                     <label><input type="radio" name="inputLang" value="he" checked> עברית 🇮🇱</label>
-                    <label><input type="radio" name="inputLang" value="am"> אמהרית 🇪🇹</label>
+                    <label><input type="radio" name="inputLang" value="am"> שפה זרה 🇪🇹</label>
                 </div>
             </div>
             <div class="input-box-row">
@@ -264,23 +254,20 @@
             </div>
         </div>
 
-        <!-- חתימה פדגוגית רשמית -->
         <div class="footer-signature">
             היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>© תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
         </div>
     </div>
 
     <script>
-        // כתובת ה-Web App של גוגל סקריפט (עדכן כאן את הכתובת שלך מהסקריפט)
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz.../exec"; 
+        // הכנס כאן את כתובת ה-Web App האמיתית שלך מגוגל סקריפט
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
 
-        // זיהוי חדר נוכחי מה-URL (לדוגמה: index.html?room=room_123)
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('room') || 'default_room';
 
         let lastMessagesLength = 0;
 
-        // טעינת הודעות עם טעינה ראשונית ורענון אוטומטי
         function loadMessages() {
             fetch(`${SCRIPT_URL}?action=getHistory&room=${roomId}`)
                 .then(response => response.json())
@@ -291,20 +278,18 @@
                         return;
                     }
 
-                    // רענון רק אם יש שינוי בכמות ההודעות כדי למנוע ריצוד
                     if (data.messages.length !== lastMessagesLength) {
                         lastMessagesLength = data.messages.length;
                         container.innerHTML = '';
                         
                         data.messages.forEach(msg => {
                             const msgDiv = document.createElement('div');
-                            // אם ההודעה הוקלדה בעברית, הצג כעברית משמאל/ימין, ואמהרית למטה
                             msgDiv.className = `message ${msg.sourceLang === 'he' ? 'hebrew' : 'amharic'}`;
                             
                             msgDiv.innerHTML = `
-                                <span class="msg-lang-tag">${msg.sourceLang === 'he' ? '🇮🇱 עברית ➔ 🇪🇹 אמהרית' : '🇪🇹 אמהרית ➔ 🇮🇱 עברית'}</span>
+                                <span class="msg-lang-tag">${msg.sourceLang === 'he' ? '🇮🇱 עברית ➔ 🇪🇹 תרגום' : '🇪🇹 שפה זרה ➔ 🇮🇱 עברית'}</span>
                                 <div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(msg.originalText)}</div>
-                                <div style="color: #555; border-top: 1px dashed rgba(0,0,0,0.1); pt: 4px; margin-top: 4px;">${escapeHtml(msg.translatedText)}</div>
+                                <div style="color: #555; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 4px; margin-top: 4px;">${escapeHtml(msg.translatedText)}</div>
                                 <div class="msg-time">${msg.time || ''}</div>
                             `;
                             container.appendChild(msgDiv);
@@ -315,7 +300,6 @@
                 .catch(err => console.error("שגיאה בטעינת הודעות:", err));
         }
 
-        // שליחת הודעה חדשה
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
@@ -336,7 +320,7 @@
                     lang: selectedLang
                 })
             }).then(() => {
-                setTimeout(loadMessages, 500); // טעינה מידית לאחר שליחה
+                setTimeout(loadMessages, 500);
             });
         }
 
@@ -368,7 +352,6 @@
                 });
         }
 
-        // רענון אוטומטי כל 3 שניות
         setInterval(loadMessages, 3000);
         loadMessages();
     </script>
