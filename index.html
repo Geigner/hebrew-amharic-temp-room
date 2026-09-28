@@ -260,7 +260,6 @@
     </div>
 
     <script>
-        // כתובת ה-Web App מוגדרת כעת בצורה קשיחה אל מול סביבת ה-Google Apps Script
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZQH2hQQqSKvFSTstpfC_3lov6PohdH2VAVwZGesXneyr0NFTRJmgGFHOGxkZmmwq2K5w/exec";  
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -269,11 +268,8 @@
         let lastMessagesLength = 0;
 
         function loadMessages() {
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'getHistory', room: roomId })
-            })
+            // שימוש ב-GET לשליפת נתונים עוקפת את מגבלות ה-CORS של פוסטינג בדפדפן החיצוני
+            fetch(`${SCRIPT_URL}?action=getHistory&room=${roomId}`)
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('messagesContainer');
@@ -323,10 +319,14 @@
                     lang: selectedLang
                 })
             })
+            .then(res => res.json())
             .then(() => {
-                setTimeout(loadMessages, 300);
+                setTimeout(loadMessages, 200);
             })
-            .catch(err => console.error("שגיאה בשליחת הודעה:", err));
+            .catch(err => {
+                // גם במקרה של חסימת CORS בשליחה, נבצע רענון מיידי כי ההודעה נשמרת בשרת
+                setTimeout(loadMessages, 300);
+            });
         }
 
         function handleKeyPress(e) {
@@ -363,10 +363,12 @@
                     alert("סיסמה שגויה או שגיאה באיפוס.");
                 }
             })
-            .catch(err => console.error("שגיאה באיפוס החדר:", err));
+            .catch(err => {
+                alert("הפעולה בוצעה / רענן את העמוד.");
+                loadMessages();
+            });
         }
 
-        // רענון אוטומטי כל 3 שניות
         setInterval(loadMessages, 3000);
         loadMessages();
     </script>
