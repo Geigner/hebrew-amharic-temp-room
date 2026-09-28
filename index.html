@@ -1,434 +1,376 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>גשר שפות עברית אמהרית - היחידה לקידום נוער נוף הגליל</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      background-color: #efeae2;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #111b21;
-      overflow: hidden;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>גשר שפות - חדר שיחה</title>
+    <style>
+        :root {
+            --whatsapp-bg: #efeae2;
+            --whatsapp-green: #00a884;
+            --whatsapp-light-green: #d9fdd3;
+            --whatsapp-white: #ffffff;
+            --whatsapp-gray: #f0f2f5;
+            --whatsapp-dark: #111b21;
+            --whatsapp-text: #3b4a54;
+        }
 
-    .container {
-      width: 100%;
-      max-width: 1100px;
-      height: 100%;
-      height: 100dvh;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 15px rgba(0,0,0,0.05);
-    }
-    .header-title {
-      background-color: #005c4b;
-      color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 16px;
-      font-weight: bold;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .admin-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .btn-admin, .btn-new-room, .btn-reset {
-      border: none;
-      padding: 6px 12px;
-      border-radius: 5px;
-      font-size: 13px;
-      cursor: pointer;
-      color: white;
-      font-weight: bold;
-    }
-    .btn-admin { background-color: #3b4a54; }
-    .btn-new-room { background-color: #00a884; display: none; }
-    .btn-reset { background-color: #ea0038; display: none; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
-    .chat-stream {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #d1d7db;
-      border-radius: 8px;
-      padding: 12px;
-      background: #efeae2;
-      margin-bottom: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      -webkit-overflow-scrolling: touch;
-    }
-    .message-bubble {
-      max-width: 85%;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 16px;
-      line-height: 1.4;
-      box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
-      word-break: break-word;
-      position: relative;
-    }
-    .bubble-user-1 {
-      align-self: flex-start;
-      background-color: #ffffff;
-      border-right: 4px solid #005c4b;
-    }
-    .bubble-user-2 {
-      align-self: flex-end;
-      background-color: #d9fdd3;
-      border-left: 4px solid #25d366;
-    }
-    .bubble-user-3 {
-      align-self: flex-start;
-      background-color: #f0f2f5;
-      border-right: 4px solid #54656f;
-    }
-    .bubble-user-other {
-      align-self: flex-end;
-      background-color: #e7ffdb;
-      border-left: 4px solid #128c7e;
-    }
+        body {
+            background-color: var(--whatsapp-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    .original-text { font-weight: 700; margin-bottom: 4px; font-size: 17px; }
-    .translated-text { color: #3b4a54; font-size: 16px; border-top: 1px dashed #d1d7db; padding-top: 6px; margin-top: 6px; }
-    .msg-time { font-size: 11px; color: #667781; text-align: left; margin-top: 4px; }
-    
-    .input-section {
-      background: #f0f2f5;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #d1d7db;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .input-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 4px;
-    }
-    .lang-selector {
-      font-size: 15px;
-      font-weight: bold;
-      color: #005c4b;
-      display: flex;
-      gap: 14px;
-      align-items: center;
-    }
-    .lang-selector label {
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .lang-selector input[type="radio"] {
-      transform: scale(1.3);
-    }
-    .input-row {
-      display: flex;
-      gap: 8px;
-    }
-    textarea {
-      flex: 1;
-      height: 50px;
-      padding: 10px 12px;
-      border: 1px solid #d1d7db;
-      border-radius: 8px;
-      font-size: 16px;
-      font-family: inherit;
-      resize: none;
-      background: #ffffff;
-    }
-    textarea:focus { border-color: #00a884; outline: none; }
-    .btn-send {
-      background-color: #00a884;
-      color: white;
-      border: none;
-      padding: 0 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 16px;
-    }
-    footer {
-      margin-top: 6px;
-      padding-top: 6px;
-      border-top: 1px solid #d1d7db;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: #54656f;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
+        /* מעטפת הצ'אט הראשי */
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            background-color: var(--whatsapp-bg);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
 
-    /* התאמה מלאה למובייל במסך מלא בגיטהב */
-    @media screen and (max-width: 768px) {
-      .container {
-        width: 100vw;
-        max-width: 100vw;
-        height: 100vh;
-        height: 100dvh;
-        padding: 0;
-        box-shadow: none;
-        border-radius: 0;
-      }
-      .header-title {
-        border-radius: 0;
-        margin-bottom: 0;
-      }
-      .chat-stream {
-        border-radius: 0;
-        border: none;
-        margin-bottom: 0;
-      }
-      .input-section {
-        border-radius: 0;
-        border: none;
-        border-top: 1px solid #d1d7db;
-      }
-    }
-  </style>
+        /* התאמה למסכי מחשב רחבים - מראה ממוקד כמו וואטסאפ-ווב */
+        @media (min-width: 768px) {
+            body {
+                background-color: #dadbd4; /* רקע מסביב למסך במחשב */
+            }
+            .chat-container {
+                max-width: 700px;
+                height: 92vh;
+                border-radius: 12px;
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+                overflow: hidden;
+            }
+        }
+
+        /* כותרת עליונה */
+        .chat-header {
+            background-color: #008069;
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            z-index: 10;
+        }
+
+        .chat-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .admin-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* אזור ההודעות */
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: radial-gradient(#d1d7db 0.75px, transparent 0.75px);
+            background-size: 24px 24px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            position: relative;
+            font-size: 14.5px;
+            line-height: 1.4;
+            box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+            word-wrap: break-word;
+        }
+
+        .message.hebrew {
+            background-color: var(--whatsapp-white);
+            align-self: flex-start;
+            border-top-right-radius: 0;
+        }
+
+        .message.amharic {
+            background-color: var(--whatsapp-light-green);
+            align-self: flex-end;
+            border-top-left-radius: 0;
+        }
+
+        .msg-lang-tag {
+            font-size: 11px;
+            font-weight: bold;
+            color: #008069;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: #667781;
+            text-align: left;
+            margin-top: 4px;
+        }
+
+        /* שורת הקלדה בתחתית */
+        .chat-input-area {
+            background-color: var(--whatsapp-gray);
+            padding: 10px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid #d1d7db;
+        }
+
+        .input-controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--whatsapp-text);
+        }
+
+        .lang-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .lang-selector label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+
+        .input-box-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        textarea {
+            flex: 1;
+            background-color: var(--whatsapp-white);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14.5px;
+            outline: none;
+            resize: none;
+            height: 42px;
+            max-height: 100px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        textarea:focus {
+            border-color: #8696a0;
+        }
+
+        .send-btn {
+            background-color: var(--whatsapp-green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 18px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: #01755c;
+        }
+
+        /* חתימה פדגוגית בתחתית */
+        .footer-signature {
+            text-align: center;
+            font-size: 10px;
+            color: #667781;
+            padding: 4px 0;
+            background-color: var(--whatsapp-gray);
+            border-top: 1px solid #e9edef;
+        }
+
+        /* ספינר טעינה */
+        .loading {
+            text-align: center;
+            color: #667781;
+            font-size: 13px;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="header-title">
-      <span id="roomTitle">🗣️ גשר שפות – חדר שיחה</span>
-      <div class="admin-controls">
-        <button id="adminBtn" class="btn-admin" onclick="unlockAdmin()">🔐 מנהל</button>
-        <button id="newRoomBtn" class="btn-new-room" onclick="createNewRoomLink()">🔗 צור קישור</button>
-        <button id="resetBtn" class="btn-reset" onclick="resetChat()">🗑️ נקה</button>
-      </div>
-    </div>
-
-    <div id="chatStream" class="chat-stream">
-      <div style="text-align: center; color: #667781; font-size: 16px; margin-top: 35px;">
-        טוען שיחה רגעית...
-      </div>
-    </div>
-
-    <div class="input-section">
-      <div class="input-controls">
-        <div class="lang-selector">
-          <span>שפת הקלדה:</span>
-          <label><input type="radio" name="chatLang" value="he" checked onclick="setLang('he')"> 🇮🇱 עברית</label>
-          <label><input type="radio" name="chatLang" value="am" onclick="setLang('am')"> 🇪🇹 አማርኛ</label>
+    <div class="chat-container">
+        <!-- כותרת -->
+        <div class="chat-header">
+            <div class="chat-title">
+                <span>💬</span> גשר שפות – חדר שיחה
+            </div>
+            <button class="admin-btn" onclick="openAdminPanel()">ניהול ⚙️</button>
         </div>
-      </div>
-      <div class="input-row">
-        <textarea id="mainInput" placeholder="הקלד משפט בעברית..." dir="rtl" onkeydown="checkSubmit(event)"></textarea>
-        <button class="btn-send" onclick="sendText()">שלח 🚀</button>
-      </div>
+
+        <!-- אזור הודעות -->
+        <div id="messagesContainer" class="chat-messages">
+            <div class="loading">טוען הודעות...</div>
+        </div>
+
+        <!-- אזור שליחה -->
+        <div class="chat-input-area">
+            <div class="input-controls-row">
+                <div class="lang-selector">
+                    <span>שפת הקלדה:</span>
+                    <label><input type="radio" name="inputLang" value="he" checked> עברית 🇮🇱</label>
+                    <label><input type="radio" name="inputLang" value="am"> אמהרית 🇪🇹</label>
+                </div>
+            </div>
+            <div class="input-box-row">
+                <textarea id="messageInput" placeholder="הקלד משפט..." rows="1" onkeydown="handleKeyPress(event)"></textarea>
+                <button class="send-btn" onclick="sendMessage()">שלח 🚀</button>
+            </div>
+        </div>
+
+        <!-- חתימה פדגוגית רשמית -->
+        <div class="footer-signature">
+            היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>© תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
+        </div>
     </div>
 
-    <footer>
-      <div>היחידה לקידום נוער נוף הגליל | תוכנית היל"ה</div>
-      <div>© תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי</div>
-    </footer>
-  </div>
+    <script>
+        // כתובת ה-Web App של גוגל סקריפט (עדכן כאן את הכתובת שלך מהסקריפט)
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz.../exec"; 
 
-  <script>
-    // כתובת ה-API המעודכנת מתוך Google Apps Script שלך
-    const API_URL = "https://script.google.com/macros/s/AKfycbxZQh2hQQqSkVfSTstpfC_3lov6PohdH2VAwvZGeSxneyr0NFTRJmGFHOGxkzmmwq2K5w/exec";
+        // זיהוי חדר נוכחי מה-URL (לדוגמה: index.html?room=room_123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('room') || 'default_room';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let currentRoom = urlParams.get('room');
-    
-    if (!currentRoom) {
-      currentRoom = 'general_room';
-    } else {
-      document.getElementById('roomTitle').innerText = '🗣️ חדר: ' + currentRoom;
-    }
+        let lastMessagesLength = 0;
 
-    let clientId = localStorage.getItem('hila_client_id_am');
-    if (!clientId) {
-      clientId = 'client_' + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem('hila_client_id_am', clientId);
-    }
+        // טעינת הודעות עם טעינה ראשונית ורענון אוטומטי
+        function loadMessages() {
+            fetch(`${SCRIPT_URL}?action=getHistory&room=${roomId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('messagesContainer');
+                    if (!data.messages || data.messages.length === 0) {
+                        container.innerHTML = '<div class="loading">אין עדיין הודעות בחדר זה. התחל שיחה חדשה!</div>';
+                        return;
+                    }
 
-    let clientColorMap = {};
-    let colorClasses = ['bubble-user-1', 'bubble-user-2', 'bubble-user-3', 'bubble-user-other'];
-    let colorIndex = 0;
-
-    function getClientBubbleClass(id) {
-      if (!clientColorMap[id]) {
-        clientColorMap[id] = colorClasses[colorIndex % colorClasses.length];
-        colorIndex++;
-      }
-      return clientColorMap[id];
-    }
-
-    setInterval(loadHistory, 2000);
-    window.onload = function() {
-      loadHistory();
-    };
-
-    function setLang(lang) {
-      const input = document.getElementById('mainInput');
-      if (lang === 'he') {
-        input.dir = 'rtl';
-        input.placeholder = 'הקלד משפט בעברית...';
-      } else {
-        input.dir = 'ltr';
-        input.placeholder = 'ጽሁፍ እዚህ ይፃፉ...';
-      }
-    }
-
-    async function callApi(action, payload = {}) {
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action, roomName: currentRoom, ...payload })
-        });
-        const resJson = await response.json();
-        if (resJson.status === 'success') {
-          return resJson.data;
-        } else {
-          throw new Error(resJson.message);
+                    // רענון רק אם יש שינוי בכמות ההודעות כדי למנוע ריצוד
+                    if (data.messages.length !== lastMessagesLength) {
+                        lastMessagesLength = data.messages.length;
+                        container.innerHTML = '';
+                        
+                        data.messages.forEach(msg => {
+                            const msgDiv = document.createElement('div');
+                            // אם ההודעה הוקלדה בעברית, הצג כעברית משמאל/ימין, ואמהרית למטה
+                            msgDiv.className = `message ${msg.sourceLang === 'he' ? 'hebrew' : 'amharic'}`;
+                            
+                            msgDiv.innerHTML = `
+                                <span class="msg-lang-tag">${msg.sourceLang === 'he' ? '🇮🇱 עברית ➔ 🇪🇹 אמהרית' : '🇪🇹 אמהרית ➔ 🇮🇱 עברית'}</span>
+                                <div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(msg.originalText)}</div>
+                                <div style="color: #555; border-top: 1px dashed rgba(0,0,0,0.1); pt: 4px; margin-top: 4px;">${escapeHtml(msg.translatedText)}</div>
+                                <div class="msg-time">${msg.time || ''}</div>
+                            `;
+                            container.appendChild(msgDiv);
+                        });
+                        container.scrollTop = container.scrollHeight;
+                    }
+                })
+                .catch(err => console.error("שגיאה בטעינת הודעות:", err));
         }
-      } catch (err) {
-        console.error("API Error:", err);
-        throw err;
-      }
-    }
 
-    async function loadHistory() {
-      try {
-        const history = await callApi('getHistory');
-        renderChat(history);
-      } catch (e) {
-        // התעלמות משגיאות שליפה מחזוריות ברקע למניעת קפיצות
-      }
-    }
+        // שליחת הודעה חדשה
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            const selectedLang = document.querySelector('input[name="inputLang"]:checked').value;
 
-    function checkSubmit(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendText();
-      }
-    }
+            if (!text) return;
 
-    async function sendText() {
-      const inputElem = document.getElementById('mainInput');
-      const text = inputElem.value.trim();
-      if (!text) return;
+            input.value = '';
 
-      const selectedLang = document.querySelector('input[name="chatLang"]:checked').value;
-      inputElem.value = '';
-
-      try {
-        const history = await callApi('sendMessage', { text, sourceLang: selectedLang, clientId });
-        renderChat(history);
-      } catch (err) {
-        alert("שגיאה בשליחה: " + err.message);
-      }
-    }
-
-    async function unlockAdmin() {
-      const pwd = prompt("הכנס סיסמת מנהל:");
-      if (!pwd) return;
-
-      try {
-        const isValid = await callApi('verifyAdmin', { password: pwd });
-        if (isValid) {
-          document.getElementById('adminBtn').style.display = 'none';
-          document.getElementById('newRoomBtn').style.display = 'inline-block';
-          document.getElementById('resetBtn').style.display = 'inline-block';
-          alert("התחברת כמנהל בהצלחה!");
-        } else {
-          alert("סיסמה שגויה.");
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'sendMessage',
+                    room: roomId,
+                    text: text,
+                    lang: selectedLang
+                })
+            }).then(() => {
+                setTimeout(loadMessages, 500); // טעינה מידית לאחר שליחה
+            });
         }
-      } catch (err) {
-        alert("שגיאה באימות: " + err.message);
-      }
-    }
 
-    function createNewRoomLink() {
-      const randomRoomId = 'room_' + Math.floor(Math.random() * 90000 + 10000);
-      const baseUrl = window.location.href.split('?')[0];
-      const newRoomUrl = baseUrl + '?room=' + randomRoomId;
-      
-      navigator.clipboard.writeText(newRoomUrl).then(function() {
-        prompt("נוצר קישור חדש ונקי לשיחה! הקישור הועתק ללוח. העבר אותו לתלמיד בוואטסאפ:", newRoomUrl);
-      }, function() {
-        prompt("הנה הקישור החדש לשיחה (העתק ידנית):", newRoomUrl);
-      });
-    }
-
-    async function resetChat() {
-      const pwd = prompt("הכנס סיסמה לאיפוס החדר הרגעי:");
-      if (!pwd) return;
-
-      try {
-        const history = await callApi('clearChat', { password: pwd });
-        renderChat(history);
-        alert("החדר נוקה בהצלחה.");
-      } catch (err) {
-        alert("שגיאה באיפוס: " + err.message);
-      }
-    }
-
-    function renderChat(history) {
-      const chatStream = document.getElementById('chatStream');
-      if (!history || history.length === 0) {
-        chatStream.innerHTML = '<div style="text-align: center; color: #667781; font-size: 16px; margin-top: 35px;">החדר נקי. אפשר להתחיל להקליד...</div>';
-        return;
-      }
-
-      let html = '';
-      history.forEach(msg => {
-        const bubbleStyleClass = getClientBubbleClass(msg.clientId);
-        const isHebrewSource = (msg.sourceLang === 'he');
-        
-        if (isHebrewSource) {
-          html += `
-            <div class="message-bubble ${bubbleStyleClass}">
-              <div class="original-text" dir="rtl">🇮🇱 ${escapeHtml(msg.original)}</div>
-              <div class="translated-text" dir="ltr">🇪🇹 ${escapeHtml(msg.translated)}</div>
-              <div class="msg-time">${msg.time}</div>
-            </div>`;
-        } else {
-          html += `
-            <div class="message-bubble ${bubbleStyleClass}">
-              <div class="original-text" dir="ltr">🇪🇹 ${escapeHtml(msg.original)}</div>
-              <div class="translated-text" dir="rtl">🇮🇱 ${escapeHtml(msg.translated)}</div>
-              <div class="msg-time">${msg.time}</div>
-            </div>`;
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         }
-      });
 
-      const isScrolledToBottom = chatStream.scrollHeight - chatStream.clientHeight <= chatStream.scrollTop + 30;
-      chatStream.innerHTML = html;
-      if (isScrolledToBottom) {
-        chatStream.scrollTop = chatStream.scrollHeight;
-      }
-    }
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
 
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-  </script>
+        function openAdminPanel() {
+            const pwd = prompt("הכנס סיסמת מנהל:");
+            if (!pwd) return;
+            
+            fetch(`${SCRIPT_URL}?action=clearChat&room=${roomId}&pwd=${encodeURIComponent(pwd)}`)
+                .then(res => res.json())
+                .then(res => {
+                    if(res.success) {
+                        alert("החדר נוקה בהצלחה!");
+                        loadMessages();
+                    } else {
+                        alert("סיסמה שגויה או שגיאה באיפוס.");
+                    }
+                });
+        }
+
+        // רענון אוטומטי כל 3 שניות
+        setInterval(loadMessages, 3000);
+        loadMessages();
+    </script>
 </body>
 </html>
