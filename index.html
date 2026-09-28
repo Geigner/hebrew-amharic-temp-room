@@ -115,7 +115,7 @@
             border-top-right-radius: 0;
         }
 
-        .message.amharic {
+        .message.foreign {
             background-color: var(--whatsapp-light-green);
             align-self: flex-end;
             border-top-left-radius: 0;
@@ -245,7 +245,7 @@
                 <div class="lang-selector">
                     <span>שפת הקלדה:</span>
                     <label><input type="radio" name="inputLang" value="he" checked> עברית 🇮🇱</label>
-                    <label><input type="radio" name="inputLang" value="am"> שפה זרה 🇪🇹</label>
+                    <label><input type="radio" name="inputLang" value="foreign"> שפה זרה 🇪🇹/🇷🇺</label>
                 </div>
             </div>
             <div class="input-box-row">
@@ -260,7 +260,7 @@
     </div>
 
     <script>
-        // הכנס כאן את כתובת ה-Web App האמיתית שלך מגוגל סקריפט
+        // עדכן כאן את כתובת ה-Web App שלך מגוגל סקריפט
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -269,35 +269,39 @@
         let lastMessagesLength = 0;
 
         function loadMessages() {
-            fetch(`${SCRIPT_URL}?action=getHistory&room=${roomId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('messagesContainer');
-                    if (!data.messages || data.messages.length === 0) {
-                        container.innerHTML = '<div class="loading">אין עדיין הודעות בחדר זה. התחל שיחה חדשה!</div>';
-                        return;
-                    }
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getHistory', room: roomId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('messagesContainer');
+                if (!data.messages || data.messages.length === 0) {
+                    container.innerHTML = '<div class="loading">אין עדיין הודעות בחדר זה. התחל שיחה חדשה!</div>';
+                    return;
+                }
 
-                    if (data.messages.length !== lastMessagesLength) {
-                        lastMessagesLength = data.messages.length;
-                        container.innerHTML = '';
+                if (data.messages.length !== lastMessagesLength) {
+                    lastMessagesLength = data.messages.length;
+                    container.innerHTML = '';
+                    
+                    data.messages.forEach(msg => {
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = `message ${msg.sourceLang === 'he' ? 'hebrew' : 'foreign'}`;
                         
-                        data.messages.forEach(msg => {
-                            const msgDiv = document.createElement('div');
-                            msgDiv.className = `message ${msg.sourceLang === 'he' ? 'hebrew' : 'amharic'}`;
-                            
-                            msgDiv.innerHTML = `
-                                <span class="msg-lang-tag">${msg.sourceLang === 'he' ? '🇮🇱 עברית ➔ 🇪🇹 תרגום' : '🇪🇹 שפה זרה ➔ 🇮🇱 עברית'}</span>
-                                <div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(msg.originalText)}</div>
-                                <div style="color: #555; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 4px; margin-top: 4px;">${escapeHtml(msg.translatedText)}</div>
-                                <div class="msg-time">${msg.time || ''}</div>
-                            `;
-                            container.appendChild(msgDiv);
-                        });
-                        container.scrollTop = container.scrollHeight;
-                    }
-                })
-                .catch(err => console.error("שגיאה בטעינת הודעות:", err));
+                        msgDiv.innerHTML = `
+                            <span class="msg-lang-tag">${msg.sourceLang === 'he' ? '🇮🇱 עברית ➔ 🌐 תרגום' : '🌐 שפה זרה ➔ 🇮🇱 עברית'}</span>
+                            <div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(msg.originalText)}</div>
+                            <div style="color: #555; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 4px; margin-top: 4px;">${escapeHtml(msg.translatedText)}</div>
+                            <div class="msg-time">${msg.time || ''}</div>
+                        `;
+                        container.appendChild(msgDiv);
+                    });
+                    container.scrollTop = container.scrollHeight;
+                }
+            })
+            .catch(err => console.error("שגיאה בטעינת הודעות:", err));
         }
 
         function sendMessage() {
@@ -311,17 +315,18 @@
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     action: 'sendMessage',
                     room: roomId,
                     text: text,
                     lang: selectedLang
                 })
-            }).then(() => {
-                setTimeout(loadMessages, 500);
-            });
+            })
+            .then(() => {
+                setTimeout(loadMessages, 300);
+            })
+            .catch(err => console.error("שגיאה בשליחת הודעה:", err));
         }
 
         function handleKeyPress(e) {
@@ -340,18 +345,28 @@
             const pwd = prompt("הכנס סיסמת מנהל:");
             if (!pwd) return;
             
-            fetch(`${SCRIPT_URL}?action=clearChat&room=${roomId}&pwd=${encodeURIComponent(pwd)}`)
-                .then(res => res.json())
-                .then(res => {
-                    if(res.success) {
-                        alert("החדר נוקה בהצלחה!");
-                        loadMessages();
-                    } else {
-                        alert("סיסמה שגויה או שגיאה באיפוס.");
-                    }
-                });
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'clearChat',
+                    room: roomId,
+                    pwd: pwd
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    alert("החדר נוקה בהצלחה!");
+                    loadMessages();
+                } else {
+                    alert("סיסמה שגויה או שגיאה באיפוס.");
+                }
+            })
+            .catch(err => console.error("שגיאה באיפוס החדר:", err));
         }
 
+        // רענון אוטומטי כל 3 שניות
         setInterval(loadMessages, 3000);
         loadMessages();
     </script>
