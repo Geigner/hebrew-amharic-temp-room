@@ -183,7 +183,6 @@
       gap: 4px;
     }
 
-    /* התאמה מלאה למובייל במסך מלא בגיטהב */
     @media screen and (max-width: 768px) {
       .container {
         width: 100vw;
@@ -250,7 +249,6 @@
   </div>
 
   <script>
-    // כתובת ה-API המעודכנת מתוך Google Apps Script שלך
     const API_URL = "https://script.google.com/macros/s/AKfycbxZQh2hQQqSkVfSTstpfC_3lov6PohdH2VAwvZGeSxneyr0NFTRJmGFHOGxkzmmwq2K5w/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -271,6 +269,7 @@
     let clientColorMap = {};
     let colorClasses = ['bubble-user-1', 'bubble-user-2', 'bubble-user-3', 'bubble-user-other'];
     let colorIndex = 0;
+    let lastHistoryLength = -1; // משתנה למניעת רינדורים וקפיצות מיותרות
 
     function getClientBubbleClass(id) {
       if (!clientColorMap[id]) {
@@ -317,9 +316,13 @@
     async function loadHistory() {
       try {
         const history = await callApi('getHistory');
-        renderChat(history);
+        // נרנדר רק אם אורכי ההיסטוריה השתנו (מונע ריצודים וקפיצות מסך מיותרות)
+        if (history.length !== lastHistoryLength) {
+          renderChat(history, false);
+          lastHistoryLength = history.length;
+        }
       } catch (e) {
-        // התעלמות משגיאות שליפה מחזוריות ברקע למניעת קפיצות
+        // התעלמות משגיאות מחזוריות ברקע
       }
     }
 
@@ -340,7 +343,8 @@
 
       try {
         const history = await callApi('sendMessage', { text, sourceLang: selectedLang, clientId });
-        renderChat(history);
+        renderChat(history, true); // שליחה מחייבת ירידה חלקה לתחתית
+        lastHistoryLength = history.length;
       } catch (err) {
         alert("שגיאה בשליחה: " + err.message);
       }
@@ -383,19 +387,23 @@
 
       try {
         const history = await callApi('clearChat', { password: pwd });
-        renderChat(history);
+        renderChat(history, true);
+        lastHistoryLength = history.length;
         alert("החדר נוקה בהצלחה.");
       } catch (err) {
         alert("שגיאה באיפוס: " + err.message);
       }
     }
 
-    function renderChat(history) {
+    function renderChat(history, forceScrollToBottom = false) {
       const chatStream = document.getElementById('chatStream');
       if (!history || history.length === 0) {
         chatStream.innerHTML = '<div style="text-align: center; color: #667781; font-size: 16px; margin-top: 35px;">החדר נקי. אפשר להתחיל להקליד...</div>';
         return;
       }
+
+      // בדיקה האם המשתמש נמצא קרוב לתחתית המסך לפני העדכון
+      const isNearBottom = chatStream.scrollHeight - chatStream.scrollTop - chatStream.clientHeight < 100;
 
       let html = '';
       history.forEach(msg => {
@@ -419,9 +427,10 @@
         }
       });
 
-      const isScrolledToBottom = chatStream.scrollHeight - chatStream.clientHeight <= chatStream.scrollTop + 30;
       chatStream.innerHTML = html;
-      if (isScrolledToBottom) {
+
+      // גלילה אוטומטית רק אם נשלחה הודעה חדשה או שהמשתמש היה כבר בתחתית
+      if (forceScrollToBottom || isNearBottom) {
         chatStream.scrollTop = chatStream.scrollHeight;
       }
     }
