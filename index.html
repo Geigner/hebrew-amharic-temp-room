@@ -260,8 +260,8 @@
     </div>
 
     <script>
-        // עדכן כאן את כתובת ה-Web App שלך מגוגל סקריפט
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec"; 
+        // כתובת ה-Web App מתעדכנת אוטומטית לפי סביבת הגוגל סקריפט
+        const SCRIPT_URL = window.location.href.split('?')[0];  
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('room') || 'default_room';
