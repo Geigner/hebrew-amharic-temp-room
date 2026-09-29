@@ -14,13 +14,14 @@
 <body class="bg-slate-50 min-h-screen flex flex-col justify-between">
 
   <!-- Header -->
-  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex justify-between items-center">
+  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex flex-wrap justify-between items-center gap-2">
     <div class="flex items-center gap-2">
       <span class="text-xl sm:text-2xl">🌉</span>
       <h1 class="text-base sm:text-xl font-bold">גשר שפות – חדר שיחה</h1>
     </div>
     
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap">
+      <div id="room-badge" class="text-xs bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-full"></div>
       <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
         📋 העתק קישור
       </button>
@@ -83,7 +84,12 @@
   </footer>
 
   <script>
+    // כתובת ה-Exec המעודכנת מתוך ה-Deployment של גוגל
     const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomName = urlParams.get('room') || 'general_room';
+    document.getElementById('room-badge').innerText = `חדר: ${roomName}`;
 
     let clientId = localStorage.getItem('hila_client_id');
     if (!clientId) {
@@ -111,7 +117,7 @@
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action, ...payload })
+          body: JSON.stringify({ action, roomName, ...payload })
         });
         
         const text = await response.text();
@@ -119,7 +125,7 @@
         try {
           resJson = JSON.parse(text);
         } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא הרשאות Anyone ב-Deploy.");
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא שכתובת ה-API נכונה ושמוגדר Anyone ב-Deploy.");
         }
 
         if (resJson.status === 'success') {
