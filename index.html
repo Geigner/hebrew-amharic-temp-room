@@ -84,7 +84,7 @@
   </footer>
 
   <script>
-    // כתובת ה-Exec המעודכנת מתוך ה-Deployment של גוגל
+    // כתובת ה-API המעודכנת ישירות מתוך ה-Deployment של Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -100,7 +100,7 @@
     function copyRoomLink() {
       const currentUrl = window.location.href;
       navigator.clipboard.writeText(currentUrl).then(() => {
-        alert("קישור לשיחה הועתק בהצלחה! שלח אותו כעת לתלמיד.");
+        alert("קישור לחדר השיחה הועתק בהצלחה! שלח אותו כעת לתלמיד.");
       }).catch(err => {
         prompt("העתק את הקישור הבא:", currentUrl);
       });
@@ -125,7 +125,7 @@
         try {
           resJson = JSON.parse(text);
         } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא שכתובת ה-API נכונה ושמוגדר Anyone ב-Deploy.");
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא שה-Deployment מוגדר כ-Anyone.");
         }
 
         if (resJson.status === 'success') {
