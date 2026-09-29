@@ -14,49 +14,52 @@
 <body class="bg-slate-50 min-h-screen flex flex-col justify-between">
 
   <!-- Header -->
-  <header class="bg-emerald-900 text-white shadow-md p-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <span class="text-2xl">🌉</span>
-      <h1 class="text-xl font-bold">גשר שפות – חדר שיחה</h1>
+  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex flex-wrap justify-between items-center gap-2">
+    <div class="flex items-center gap-2">
+      <span class="text-xl sm:text-2xl">🌉</span>
+      <h1 class="text-base sm:text-xl font-bold">גשר שפות</h1>
     </div>
     
-    <div class="flex items-center gap-2">
-      <div id="room-indicator" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200"></div>
-      <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow">
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <div id="room-indicator" class="text-[11px] sm:text-xs bg-emerald-800 px-2.5 py-1 rounded-full text-emerald-200"></div>
+      <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-[11px] sm:text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
+        📋 העתק קישור
+      </button>
+      <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-600 text-[11px] sm:text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow">
         ➕ חדר חדש
       </button>
-      <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition flex items-center gap-1">
+      <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-[11px] sm:text-xs px-2.5 py-1.5 rounded transition">
         🔒 מנהל
       </button>
     </div>
   </header>
 
   <!-- Main Chat Container -->
-  <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col gap-4">
+  <main class="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3">
     <!-- Chat History Box -->
-    <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-4 overflow-y-auto max-h-[60vh] min-h-[400px] flex flex-col gap-3">
+    <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-3 sm:p-4 overflow-y-auto h-[50vh] sm:max-h-[60vh] sm:min-h-[400px] flex flex-col gap-3">
       <div class="text-center text-slate-400 py-10">טוען היסטוריית שיחה...</div>
     </div>
 
     <!-- Input Area -->
-    <div class="bg-white border border-slate-200 rounded-xl shadow p-4 flex flex-col gap-3">
-      <div class="flex items-center justify-between text-sm text-slate-600">
-        <div class="flex items-center gap-4">
-          <label class="flex items-center gap-1.5 cursor-pointer">
+    <div class="bg-white border border-slate-200 rounded-xl shadow p-3 sm:p-4 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between text-xs sm:text-sm text-slate-600 flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1 cursor-pointer">
             <input type="radio" name="sourceLang" value="he" checked class="text-emerald-600 focus:ring-emerald-500">
-            <span>שפת הקלדה: עברית 🇮🇱</span>
+            <span>עברית 🇮🇱</span>
           </label>
-          <label class="flex items-center gap-1.5 cursor-pointer">
+          <label class="flex items-center gap-1 cursor-pointer">
             <input type="radio" name="sourceLang" value="am" class="text-emerald-600 focus:ring-emerald-500">
-            <span>שפת הקלדה: אמהרית 🇪🇹</span>
+            <span>אמהרית 🇪🇹</span>
           </label>
         </div>
-        <span id="typing-status" class="text-xs text-slate-400">מתחבר לשרת...</span>
+        <span id="typing-status" class="text-[11px] sm:text-xs text-slate-400">מתחבר...</span>
       </div>
 
       <div class="flex gap-2">
-        <textarea id="message-input" rows="2" placeholder="הקלד משפט בעברית..." class="flex-1 border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" onkeydown="handleKeyPress(event)"></textarea>
-        <button onclick="sendMessage()" id="send-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 shadow">
+        <textarea id="message-input" rows="2" placeholder="הקלד משפט בעברית..." class="flex-1 border border-slate-300 rounded-lg p-2.5 sm:p-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" onkeydown="handleKeyPress(event)"></textarea>
+        <button onclick="sendMessage()" id="send-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 sm:px-6 rounded-lg font-medium transition flex items-center justify-center gap-1.5 shadow text-sm sm:text-base">
           <span>שלח</span>
           <span>🚀</span>
         </button>
@@ -78,7 +81,7 @@
   </div>
 
   <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 leading-relaxed">
     היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
     © תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
   </footer>
@@ -98,11 +101,20 @@
     document.getElementById('room-indicator').innerText = `חדר: ${currentRoom}`;
 
     function createNewRoom() {
-      const roomName = prompt("הכנס שם לחדר החדש (לדוגמה: group_a, class_10):");
+      const roomName = prompt("הכנס שם לחדר החדש (לדוגמה: student_name, group_1):");
       if (roomName) {
         const cleanName = roomName.trim().replace(/\s+/g, '_');
         window.location.href = window.location.pathname + '?room=' + encodeURIComponent(cleanName);
       }
+    }
+
+    function copyRoomLink() {
+      const currentUrl = window.location.href;
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        alert("קישור לחדר הועתק בהצלחה! שלח אותו כעת לתלמיד.");
+      }).catch(err => {
+        prompt("העתק את הקישור הבא:", currentUrl);
+      });
     }
 
     document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
@@ -149,7 +161,7 @@
           renderChat(history);
           lastHistoryJson = historyJson;
         }
-        document.getElementById('typing-status').innerText = "מחובר בזמן אמת 🟢";
+        document.getElementById('typing-status').innerText = "מחובר 🟢";
       } catch (err) {
         document.getElementById('typing-status').innerText = "שגיאת חיבור 🔴";
       }
@@ -167,9 +179,9 @@
         const isMe = item.clientId === clientId;
         html += `
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1">
-            <div class="max-w-xl bg-slate-100 border border-slate-200 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-              <div class="text-base text-slate-900 font-medium">${escapeHtml(item.original)}</div>
-              <div class="border-t border-slate-200 pt-1.5 text-base text-emerald-800 font-semibold" dir="${item.sourceLang === 'he' ? 'ltr' : 'rtl'}">
+            <div class="max-w-xl bg-slate-100 border border-slate-200 rounded-2xl p-3 sm:p-3.5 shadow-sm flex flex-col gap-1.5">
+              <div class="text-sm sm:text-base text-slate-900 font-medium">${escapeHtml(item.original)}</div>
+              <div class="border-t border-slate-200 pt-1.5 text-sm sm:text-base text-emerald-800 font-semibold" dir="${item.sourceLang === 'he' ? 'ltr' : 'rtl'}">
                 ${escapeHtml(item.translated)}
               </div>
             </div>
@@ -215,7 +227,7 @@
 
     function openAdminModal() {
       document.getElementById('admin-modal').classList.remove('hidden');
-      document.getElementById('admin-password-input').value, '';
+      document.getElementById('admin-password-input').value = '';
       document.getElementById('admin-password-input').focus();
     }
 
