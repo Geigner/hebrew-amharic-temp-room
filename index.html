@@ -21,7 +21,7 @@
     </div>
     
     <div class="flex items-center gap-2 flex-wrap">
-      <div id="room-badge" class="text-xs bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-full"></div>
+      <div id="room-badge" class="text-xs bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-full hidden"></div>
       <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
         📋 העתק קישור
       </button>
@@ -35,7 +35,7 @@
   <main class="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3">
     <!-- Chat History Box -->
     <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-3 sm:p-4 overflow-y-auto h-[50vh] sm:max-h-[60vh] sm:min-h-[400px] flex flex-col gap-3">
-      <div class="text-center text-slate-400 py-10">טוען היסטוריית שיחה...</div>
+      <div class="text-center text-slate-400 py-10" id="loading-initial">טוען היסטוריית שיחה...</div>
     </div>
 
     <!-- Input Area -->
@@ -69,7 +69,7 @@
     <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4">
       <h3 class="text-lg font-bold text-slate-800">ניקוי שיחה (מנהל)</h3>
       <p class="text-sm text-slate-600">הכנס סיסמת מנהל למחיקת היסטוריית השיחה מהשרת:</p>
-      <input type="password" id="admin-password-input" placeholder="סיסמה" class="border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <input type="password" id="admin-password-input" placeholder="סיסמה" class="border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" onkeydown="handleAdminKeyPress(event)">
       <div class="flex gap-2 justify-end mt-2">
         <button onclick="closeAdminModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">ביטול</button>
         <button onclick="clearChatAction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">אשר מחיקה</button>
@@ -84,12 +84,16 @@
   </footer>
 
   <script>
-    // כתובת ה-API המעודכנת ישירות מתוך ה-Deployment של Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomName = urlParams.get('room') || 'general_room';
-    document.getElementById('room-badge').innerText = `חדר: ${roomName}`;
+    
+    if (urlParams.get('room')) {
+      const badge = document.getElementById('room-badge');
+      badge.innerText = `חדר: ${roomName}`;
+      badge.classList.remove('hidden');
+    }
 
     let clientId = localStorage.getItem('hila_client_id');
     if (!clientId) {
@@ -125,7 +129,7 @@
         try {
           resJson = JSON.parse(text);
         } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא שה-Deployment מוגדר כ-Anyone.");
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין.");
         }
 
         if (resJson.status === 'success') {
@@ -140,19 +144,27 @@
     }
 
     let lastHistoryJson = "";
+    let isFetching = false;
 
-    async function fetchHistory() {
+    async function fetchHistory(isBackground = true) {
+      if (isFetching) return;
+      isFetching = true;
       try {
         const history = await callApi('getHistory');
         const historyJson = JSON.stringify(history);
         
+        // מעדכן את המסך אך ורק אם באמת היו שינויים בנתונים (מונע ריצודים לחלוטין)
         if (historyJson !== lastHistoryJson) {
           renderChat(history);
           lastHistoryJson = historyJson;
         }
         document.getElementById('typing-status').innerText = "מחובר 🟢";
       } catch (err) {
-        document.getElementById('typing-status').innerText = "שגיאת חיבור 🔴";
+        if (!isBackground) {
+          document.getElementById('typing-status').innerText = "שגיאת חיבור 🔴";
+        }
+      } finally {
+        isFetching = false;
       }
     }
 
@@ -179,9 +191,9 @@
         `;
       });
 
-      const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
+      const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 100;
       chatBox.innerHTML = html;
-      if (isAtBottom) {
+      if (isAtBottom || chatBox.innerHTML.includes('טוען')) {
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
@@ -214,6 +226,12 @@
       }
     }
 
+    function handleAdminKeyPress(e) {
+      if (e.key === 'Enter') {
+        clearChatAction();
+      }
+    }
+
     function openAdminModal() {
       document.getElementById('admin-modal').classList.remove('hidden');
       document.getElementById('admin-password-input').value = '';
@@ -236,7 +254,6 @@
         renderChat(history);
         lastHistoryJson = JSON.stringify(history);
         closeAdminModal();
-        alert("השיחה נוקתה לחלוטין בהצלחה.");
       } catch (err) {
         alert("שגיאה: " + err.message);
       }
@@ -244,11 +261,13 @@
 
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-      return text.replace(/[&<>"']/g, m => map[m]);
+      return text.replace(/&amp;|&lt;|&gt;|&quot;|&#039;|&[<>"]/g, m => map[m] || m);
     }
 
-    fetchHistory();
-    setInterval(fetchHistory, 2000);
+    // טעינה ראשונית מהירה
+    fetchHistory(false);
+    // בדיקת עדכונים ברקע כל 2.5 שניות בלי ריצודים
+    setInterval(() => fetchHistory(true), 2500);
   </script>
 </body>
 </html>
