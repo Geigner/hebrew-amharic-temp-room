@@ -29,7 +29,6 @@
   <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col gap-4">
     <!-- Chat History Box -->
     <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-4 overflow-y-auto max-h-[60vh] min-h-[400px] flex flex-col gap-3">
-      <!-- הודעות יטענו לכאן אוטומטית -->
       <div class="text-center text-slate-400 py-10">טוען היסטוריית שיחה...</div>
     </div>
 
@@ -52,7 +51,7 @@
       <div class="flex gap-2">
         <textarea id="message-input" rows="2" placeholder="הקלד משפט בעברית..." class="flex-1 border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" onkeydown="handleKeyPress(event)"></textarea>
         <button onclick="sendMessage()" id="send-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 rounded-lg font-medium transition flex items-center justify-center gap-2 shadow">
-          <span>שלح</span>
+          <span>שלח</span>
           <span>🚀</span>
         </button>
       </div>
@@ -79,14 +78,12 @@
   </footer>
 
   <script>
-    // כתובת ה-API של ה-Apps Script (ודא מעודכן לכתובת הפריסה האחרונה)
-    const API_URL = "כאן_הכנס_את_כתובת_הווב_אפ_שלך_מגוגל";
+    // ** החלף כאן את הכתובת בכתובת ה-Web App המעודכנת שלך מ-Apps Script **
+    const API_URL = "https://script.google.com/macros/s/AKfycby...הדבק_כאן_את_הכתובת_שלך.../exec";
 
-    // זיהוי שם החדר מתוך פרמטר ב-URL (למשל ?room=room_123)
     const urlParams = new URLSearchParams(window.location.search);
     const currentRoom = urlParams.get('room') || 'general_room';
     
-    // מזהה מכשיר ייחודי למניעת כפילויות תצוגה
     let clientId = localStorage.getItem('hila_client_id');
     if (!clientId) {
       clientId = 'client_' + Math.random().toString(36).substring(2, 9);
@@ -95,15 +92,10 @@
 
     document.getElementById('room-indicator').innerText = `חדר: ${currentRoom}`;
 
-    // עדכון מקלדת / פלייסהולדר לפי בחירת השפה
     document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
       radio.addEventListener('change', (e) => {
         const input = document.getElementById('message-input');
-        if (e.target.value === 'he') {
-          input.placeholder = "הקלד משפט בעברית...";
-        } else {
-          input.placeholder = "הקלד משפט באמהרית...";
-        }
+        input.placeholder = e.target.value === 'he' ? "הקלד משפט בעברית..." : "הקלד משפט באמהרית...";
       });
     });
 
@@ -114,19 +106,18 @@
           body: JSON.stringify({ action, roomName: currentRoom, ...payload })
         });
         
-        const rawText = await response.text();
+        const text = await response.text();
         let resJson;
         try {
-          resJson = JSON.parse(rawText);
-        } catch (parseErr) {
-          console.error("Server returned non-JSON:", rawText);
-          throw new Error("השרת החזיר תשובה שאינה תקינה. ודא שביצעת Deploy חדש ב-Apps Script.");
+          resJson = JSON.parse(text);
+        } catch (e) {
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא הרשאות Anyone ב-Deploy.");
         }
 
         if (resJson.status === 'success') {
           return resJson.data;
         } else {
-          throw new Error(resJson.message || "שגיאה לא ידועה מהשרת");
+          throw new Error(resJson.message || "שגיאת שרת");
         }
       } catch (err) {
         console.error("API Error:", err);
@@ -136,16 +127,13 @@
 
     let lastHistoryLength = -1;
 
-    async function fetchHistory(isBackground = false) {
+    async function fetchHistory() {
       try {
         const history = await callApi('getHistory');
-        
-        // עדכון רק אם יש שינוי באורכו כדי למנוע ריצוד מסך מיותר
         if (history.length !== lastHistoryLength) {
           renderChat(history);
           lastHistoryLength = history.length;
         }
-        
         document.getElementById('typing-status').innerText = "מחובר בזמן אמת 🟢";
       } catch (err) {
         document.getElementById('typing-status').innerText = "שגיאת חיבור 🔴";
@@ -175,7 +163,6 @@
         `;
       });
 
-      // שמירה על מיקום הגלילה אם המשתמש כבר נמצא למטה
       const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
       chatBox.innerHTML = html;
       if (isAtBottom || lastHistoryLength === -1) {
@@ -244,9 +231,8 @@
       return text.replace(/[&<>"']/g, m => map[m]);
     }
 
-    // טעינה ראשונית ופולינג כל 2 שניות
     fetchHistory();
-    setInterval(() => fetchHistory(true), 2000);
+    setInterval(fetchHistory, 2000);
   </script>
 </body>
 </html>
