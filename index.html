@@ -19,10 +19,16 @@
       <span class="text-2xl">🌉</span>
       <h1 class="text-xl font-bold">גשר שפות – חדר שיחה</h1>
     </div>
-    <div id="room-indicator" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200"></div>
-    <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition flex items-center gap-1">
-      🔒 מנהל
-    </button>
+    
+    <div class="flex items-center gap-2">
+      <div id="room-indicator" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200"></div>
+      <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow">
+        ➕ חדר חדש
+      </button>
+      <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition flex items-center gap-1">
+        🔒 מנהל
+      </button>
+    </div>
   </header>
 
   <!-- Main Chat Container -->
@@ -78,7 +84,6 @@
   </footer>
 
   <script>
-    // כתובת ה-Web App המעודכנת מתוך Google Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -91,6 +96,14 @@
     }
 
     document.getElementById('room-indicator').innerText = `חדר: ${currentRoom}`;
+
+    function createNewRoom() {
+      const roomName = prompt("הכנס שם לחדר החדש (לדוגמה: group_a, class_10):");
+      if (roomName) {
+        const cleanName = roomName.trim().replace(/\s+/g, '_');
+        window.location.href = window.location.pathname + '?room=' + encodeURIComponent(cleanName);
+      }
+    }
 
     document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
       radio.addEventListener('change', (e) => {
@@ -125,14 +138,16 @@
       }
     }
 
-    let lastHistoryLength = -1;
+    let lastHistoryJson = "";
 
     async function fetchHistory() {
       try {
         const history = await callApi('getHistory');
-        if (history.length !== lastHistoryLength) {
+        const historyJson = JSON.stringify(history);
+        
+        if (historyJson !== lastHistoryJson) {
           renderChat(history);
-          lastHistoryLength = history.length;
+          lastHistoryJson = historyJson;
         }
         document.getElementById('typing-status').innerText = "מחובר בזמן אמת 🟢";
       } catch (err) {
@@ -165,7 +180,7 @@
 
       const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
       chatBox.innerHTML = html;
-      if (isAtBottom || lastHistoryLength === -1) {
+      if (isAtBottom) {
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
@@ -182,7 +197,7 @@
       try {
         const history = await callApi('sendMessage', { text, sourceLang, clientId });
         renderChat(history);
-        lastHistoryLength = history.length;
+        lastHistoryJson = JSON.stringify(history);
       } catch (err) {
         alert("שגיאה בשליחת ההודעה: " + err.message);
       } finally {
@@ -200,7 +215,7 @@
 
     function openAdminModal() {
       document.getElementById('admin-modal').classList.remove('hidden');
-      document.getElementById('admin-password-input').value = '';
+      document.getElementById('admin-password-input').value, '';
       document.getElementById('admin-password-input').focus();
     }
 
@@ -218,7 +233,7 @@
       try {
         const history = await callApi('clearChat', { password });
         renderChat(history);
-        lastHistoryLength = 0;
+        lastHistoryJson = JSON.stringify(history);
         closeAdminModal();
         alert("החדר נוקה בהצלחה.");
       } catch (err) {
