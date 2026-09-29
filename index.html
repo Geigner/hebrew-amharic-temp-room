@@ -14,27 +14,16 @@
 <body class="bg-slate-50 min-h-screen flex flex-col justify-between">
 
   <!-- Header -->
-  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex flex-col gap-3">
-    <div class="flex flex-wrap justify-between items-center gap-2">
-      <div class="flex items-center gap-2">
-        <span class="text-xl sm:text-2xl">🌉</span>
-        <h1 class="text-base sm:text-xl font-bold">גשר שפות</h1>
-      </div>
-      
-      <div class="flex items-center gap-1.5 flex-wrap">
-        <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-[11px] sm:text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
-          📋 העתק קישור
-        </button>
-        <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-600 text-[11px] sm:text-xs px-2.5 py-1.5 rounded transition flex items-center gap-1 shadow">
-          ➕ חדר חדש
-        </button>
-      </div>
+  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <span class="text-xl sm:text-2xl">🌉</span>
+      <h1 class="text-base sm:text-xl font-bold">גשר שפות – חדר שיחה</h1>
     </div>
-
-    <!-- Active Rooms Bar (Tabs) -->
-    <div id="rooms-bar" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-t border-emerald-800 pt-2">
-      <span class="text-emerald-300 whitespace-nowrap pl-2">חדרים פעילים:</span>
-      <!-- טאבים יטענו דינמית -->
+    
+    <div class="flex items-center gap-2">
+      <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition">
+        🔒 מנהל (ניקוי שיחה)
+      </button>
     </div>
   </header>
 
@@ -71,6 +60,19 @@
     </div>
   </main>
 
+  <!-- Admin Password Modal -->
+  <div id="admin-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4">
+      <h3 class="text-lg font-bold text-slate-800">ניקוי שיחה (מנהל)</h3>
+      <p class="text-sm text-slate-600">הכנס סיסמת מנהל למחיקת היסטוריית השיחה מהשרת:</p>
+      <input type="password" id="admin-password-input" placeholder="סיסמה" class="border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <div class="flex gap-2 justify-end mt-2">
+        <button onclick="closeAdminModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">ביטול</button>
+        <button onclick="clearChatAction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">אשר מחיקה</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 leading-relaxed">
     היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
@@ -80,37 +82,24 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentRoom = urlParams.get('room') || 'general_room';
-    
     let clientId = localStorage.getItem('hila_client_id');
     if (!clientId) {
       clientId = 'client_' + Math.random().toString(36).substring(2, 9);
       localStorage.setItem('hila_client_id', clientId);
     }
 
-    function createNewRoom() {
-      const roomName = prompt("הכנס שם לחדר החדש (לדוגמה: שם התלמיד או קבוצה):");
-      if (roomName) {
-        const cleanName = roomName.trim().replace(/\s+/g, '_');
-        window.location.href = window.location.pathname + '?room=' + encodeURIComponent(cleanName);
-      }
-    }
-
-    function copyRoomLink() {
-      const currentUrl = window.location.href;
-      navigator.clipboard.writeText(currentUrl).then(() => {
-        alert("קישור לחדר הועתק בהצלחה! שלח אותו כעת לתלמיד.");
-      }).catch(err => {
-        prompt("העתק את הקישור הבא:", currentUrl);
+    document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const input = document.getElementById('message-input');
+        input.placeholder = e.target.value === 'he' ? "הקלד משפט בעברית..." : "הקלד משפט באמהרית...";
       });
-    }
+    });
 
     async function callApi(action, payload = {}) {
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action, roomName: currentRoom, ...payload })
+          body: JSON.stringify({ action, ...payload })
         });
         
         const text = await response.text();
@@ -118,7 +107,7 @@
         try {
           resJson = JSON.parse(text);
         } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא הרשאות Anyone ב-Deploy.");
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין. وדא הרשאות Anyone ב-Deploy.");
         }
 
         if (resJson.status === 'success') {
@@ -131,58 +120,6 @@
         throw err;
       }
     }
-
-    async function loadActiveRoomsBar() {
-      try {
-        const rooms = await callApi('listRooms');
-        const bar = document.getElementById('rooms-bar');
-        let html = '<span class="text-emerald-300 whitespace-nowrap pl-2">חדרים פעילים:</span>';
-        
-        if (rooms && rooms.length > 0) {
-          rooms.forEach(r => {
-            const isActive = r === currentRoom;
-            const activeClass = isActive ? 'bg-emerald-700 text-white font-bold border-white' : 'bg-emerald-800 text-emerald-200 hover:bg-emerald-700';
-            html += `
-              <div class="flex items-center rounded-full border border-emerald-700 overflow-hidden shrink-0 ${activeClass}">
-                <a href="?room=${encodeURIComponent(r)}" class="px-3 py-1 text-xs">💬 ${r}</a>
-                ${r !== 'general_room' ? `<button onclick="closeRoom(event, '${r}')" class="px-1.5 py-1 hover:bg-red-700 text-emerald-300 hover:text-white transition" title="סגור ומחק חדר">✖</button>` : ''}
-              </div>
-            `;
-          });
-        }
-        bar.innerHTML = html;
-      } catch (e) {
-        console.error("Failed to load rooms bar", e);
-      }
-    }
-
-    async function closeRoom(event, roomToClose) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!confirm(`האם אתה בטוח שברצונך למחוק לחלוטין את החדר "${roomToClose}" ואת כל היסטוריית השיחה שלו?`)) return;
-
-      try {
-        await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'deleteRoom', roomName: roomToClose })
-        });
-
-        if (roomToClose === currentRoom) {
-          window.location.href = window.location.pathname; // חזרה לכללי אם נמחק החדר הנוכחי
-        } else {
-          loadActiveRoomsBar();
-        }
-      } catch (err) {
-        alert("שגיאה במחיקת החדר: " + err.message);
-      }
-    }
-
-    document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        const input = document.getElementById('message-input');
-        input.placeholder = e.target.value === 'he' ? "הקלד משפט בעברית..." : "הקלד משפט באמהרית...";
-      });
-    });
 
     let lastHistoryJson = "";
 
@@ -204,7 +141,7 @@
     function renderChat(history) {
       const chatBox = document.getElementById('chat-box');
       if (!history || history.length === 0) {
-        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">החדר (${currentRoom}) ריק עדיין. התחל לכתוב למטה!</div>`;
+        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">השיחה ריקה כרגע. התחל לכתוב למטה!</div>`;
         return;
       }
 
@@ -244,7 +181,6 @@
         const history = await callApi('sendMessage', { text, sourceLang, clientId });
         renderChat(history);
         lastHistoryJson = JSON.stringify(history);
-        loadActiveRoomsBar();
       } catch (err) {
         alert("שגיאה בשליחת ההודעה: " + err.message);
       } finally {
@@ -260,16 +196,41 @@
       }
     }
 
+    function openAdminModal() {
+      document.getElementById('admin-modal').classList.remove('hidden');
+      document.getElementById('admin-password-input').value = '';
+      document.getElementById('admin-password-input').focus();
+    }
+
+    function closeAdminModal() {
+      document.getElementById('admin-modal').classList.add('hidden');
+    }
+
+    async function clearChatAction() {
+      const password = document.getElementById('admin-password-input').value;
+      if (!password) {
+        alert("נא להזין סיסמה");
+        return;
+      }
+
+      try {
+        const history = await callApi('clearChat', { password });
+        renderChat(history);
+        lastHistoryJson = JSON.stringify(history);
+        closeAdminModal();
+        alert("השיחה נוקתה לחלוטין בהצלחה.");
+      } catch (err) {
+        alert("שגיאה: " + err.message);
+      }
+    }
+
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
       return text.replace(/[&<>"']/g, m => map[m]);
     }
 
-    // טעינה ראשונית
-    loadActiveRoomsBar();
     fetchHistory();
     setInterval(fetchHistory, 2000);
-    setInterval(loadActiveRoomsBar, 10000); // רענון בר החדרים מדי פעם
   </script>
 </body>
 </html>
