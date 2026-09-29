@@ -21,6 +21,9 @@
     </div>
     
     <div class="flex items-center gap-2">
+      <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
+        📋 העתק קישור
+      </button>
       <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition">
         🔒 מנהל (ניקוי שיחה)
       </button>
@@ -88,6 +91,15 @@
       localStorage.setItem('hila_client_id', clientId);
     }
 
+    function copyRoomLink() {
+      const currentUrl = window.location.href;
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        alert("קישור לשיחה הועתק בהצלחה! שלח אותו כעת לתלמיד.");
+      }).catch(err => {
+        prompt("העתק את הקישור הבא:", currentUrl);
+      });
+    }
+
     document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
       radio.addEventListener('change', (e) => {
         const input = document.getElementById('message-input');
@@ -107,7 +119,7 @@
         try {
           resJson = JSON.parse(text);
         } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין. وדא הרשאות Anyone ב-Deploy.");
+          throw new Error("השרת החזיר תשובה שאינה JSON תקין. ודא הרשאות Anyone ב-Deploy.");
         }
 
         if (resJson.status === 'success') {
