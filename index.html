@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html dir="rtl" lang="he" translate="no">
 <head>
   <meta charset="utf-8">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>גשר שפות עברית אמהרית - היחידה לקידום נוער נוף הגליל</title>
   <style>
@@ -108,8 +109,8 @@
       border-left: 4px solid #128c7e;
     }
 
-    .original-text { font-weight: 700; margin-bottom: 4px; font-size: 17px; }
-    .translated-text { color: #3b4a54; font-size: 16px; border-top: 1px dashed #d1d7db; padding-top: 6px; margin-top: 6px; }
+    .original-text { font-weight: 700; margin-bottom: 4px; font-size: 17px; unicode-bidi: plaintext; }
+    .translated-text { color: #3b4a54; font-size: 16px; border-top: 1px dashed #d1d7db; padding-top: 6px; margin-top: 6px; unicode-bidi: plaintext; }
     .msg-time { font-size: 11px; color: #667781; text-align: left; margin-top: 4px; }
     
     .input-section {
@@ -158,6 +159,7 @@
       font-family: inherit;
       resize: none;
       background: #ffffff;
+      text-align: right;
     }
     textarea:focus { border-color: #00a884; outline: none; }
     .btn-send {
@@ -210,15 +212,15 @@
     }
   </style>
 </head>
-<body>
+<body translate="no">
 
   <div class="container">
     <div class="header-title">
       <span id="roomTitle">🗣️ גשר שפות – חדר שיחה</span>
       <div class="admin-controls">
         <button id="adminBtn" class="btn-admin" onclick="unlockAdmin()">🔐 מנהל</button>
-        <button id="newRoomBtn" class="btn-new-room" onclick="createNewRoomLink()">🔗 צור קישור</button>
-        <button id="resetBtn" class="btn-reset" onclick="resetChat()">🗑️ נקה</button>
+        <button id="newRoomBtn" class="btn-new-room" onclick="createNewRoomLink()" style="display:none;">🔗 צור קישור</button>
+        <button id="resetBtn" class="btn-reset" onclick="resetChat()" style="display:none;">🗑️ נקה</button>
       </div>
     </div>
 
@@ -237,7 +239,7 @@
         </div>
       </div>
       <div class="input-row">
-        <textarea id="mainInput" placeholder="הקלד משפט בעברית..." dir="rtl" onkeydown="checkSubmit(event)"></textarea>
+        <textarea id="mainInput" placeholder="הקלד משפט בעברית..." dir="rtl" translate="no" onkeydown="checkSubmit(event)"></textarea>
         <button class="btn-send" onclick="sendText()">שלח 🚀</button>
       </div>
     </div>
@@ -269,7 +271,7 @@
     let clientColorMap = {};
     let colorClasses = ['bubble-user-1', 'bubble-user-2', 'bubble-user-3', 'bubble-user-other'];
     let colorIndex = 0;
-    let lastHistoryLength = -1; // משתנה למניעת רינדורים וקפיצות מיותרות
+    let cachedHistory = [];
 
     function getClientBubbleClass(id) {
       if (!clientColorMap[id]) {
@@ -279,18 +281,30 @@
       return clientColorMap[id];
     }
 
-    setInterval(loadHistory, 2000);
+    // בדיקת סטטוס מנהל מהזיכרון המקומי בעליית הדף (מונע עיכובים)
     window.onload = function() {
-      loadHistory();
+      if (sessionStorage.getItem('hila_admin_active') === 'true') {
+        showAdminControls();
+      }
+      loadHistory(true);
+      setInterval(() => loadHistory(false), 2000);
     };
+
+    function showAdminControls() {
+      document.getElementById('adminBtn').style.display = 'none';
+      document.getElementById('newRoomBtn').style.display = 'inline-block';
+      document.getElementById('resetBtn').style.display = 'inline-block';
+    }
 
     function setLang(lang) {
       const input = document.getElementById('mainInput');
       if (lang === 'he') {
         input.dir = 'rtl';
+        input.style.textAlign = 'right';
         input.placeholder = 'הקלד משפט בעברית...';
       } else {
         input.dir = 'ltr';
+        input.style.textAlign = 'left';
         input.placeholder = 'ጽሁፍ እዚህ ይፃፉ...';
       }
     }
@@ -313,16 +327,16 @@
       }
     }
 
-    async function loadHistory() {
+    async function loadHistory(forceScroll = false) {
       try {
         const history = await callApi('getHistory');
-        // נרנדר רק אם אורכי ההיסטוריה השתנו (מונע ריצודים וקפיצות מסך מיותרות)
-        if (history.length !== lastHistoryLength) {
-          renderChat(history, false);
-          lastHistoryLength = history.length;
+        // נרנדר רק אם הנתונים השתנו או בטעינה ראשונית
+        if (JSON.stringify(history) !== JSON.stringify(cachedHistory)) {
+          cachedHistory = history;
+          renderChat(history, forceScroll);
         }
       } catch (e) {
-        // התעלמות משגיאות מחזוריות ברקע
+        // שקט בשגיאות רקע
       }
     }
 
@@ -341,12 +355,24 @@
       const selectedLang = document.querySelector('input[name="chatLang"]:checked').value;
       inputElem.value = '';
 
+      // הוספה אופטימיזציה מיידית למסך (מונע את תחושת ההיעלמות וההמתנה)
+      const tempMsg = {
+        time: 'עכשיו...',
+        clientId: clientId,
+        sourceLang: selectedLang,
+        original: text,
+        translated: 'מבצע תרגום...'
+      };
+      cachedHistory.push(tempMsg);
+      renderChat(cachedHistory, true);
+
       try {
         const history = await callApi('sendMessage', { text, sourceLang: selectedLang, clientId });
-        renderChat(history, true); // שליחה מחייבת ירידה חלקה לתחתית
-        lastHistoryLength = history.length;
+        cachedHistory = history;
+        renderChat(cachedHistory, true);
       } catch (err) {
         alert("שגיאה בשליחה: " + err.message);
+        loadHistory(true); // שחזור במקרה של תקלה
       }
     }
 
@@ -357,9 +383,8 @@
       try {
         const isValid = await callApi('verifyAdmin', { password: pwd });
         if (isValid) {
-          document.getElementById('adminBtn').style.display = 'none';
-          document.getElementById('newRoomBtn').style.display = 'inline-block';
-          document.getElementById('resetBtn').style.display = 'inline-block';
+          sessionStorage.setItem('hila_admin_active', 'true');
+          showAdminControls();
           alert("התחברת כמנהל בהצלחה!");
         } else {
           alert("סיסמה שגויה.");
@@ -387,8 +412,8 @@
 
       try {
         const history = await callApi('clearChat', { password: pwd });
+        cachedHistory = history;
         renderChat(history, true);
-        lastHistoryLength = history.length;
         alert("החדר נוקה בהצלחה.");
       } catch (err) {
         alert("שגיאה באיפוס: " + err.message);
@@ -402,8 +427,7 @@
         return;
       }
 
-      // בדיקה האם המשתמש נמצא קרוב לתחתית המסך לפני העדכון
-      const isNearBottom = chatStream.scrollHeight - chatStream.scrollTop - chatStream.clientHeight < 100;
+      const isNearBottom = chatStream.scrollHeight - chatStream.scrollTop - chatStream.clientHeight < 120;
 
       let html = '';
       history.forEach(msg => {
@@ -412,14 +436,14 @@
         
         if (isHebrewSource) {
           html += `
-            <div class="message-bubble ${bubbleStyleClass}">
+            <div class="message-bubble ${bubbleStyleClass}" translate="no">
               <div class="original-text" dir="rtl">🇮🇱 ${escapeHtml(msg.original)}</div>
               <div class="translated-text" dir="ltr">🇪🇹 ${escapeHtml(msg.translated)}</div>
               <div class="msg-time">${msg.time}</div>
             </div>`;
         } else {
           html += `
-            <div class="message-bubble ${bubbleStyleClass}">
+            <div class="message-bubble ${bubbleStyleClass}" translate="no">
               <div class="original-text" dir="ltr">🇪🇹 ${escapeHtml(msg.original)}</div>
               <div class="translated-text" dir="rtl">🇮🇱 ${escapeHtml(msg.translated)}</div>
               <div class="msg-time">${msg.time}</div>
@@ -429,7 +453,6 @@
 
       chatStream.innerHTML = html;
 
-      // גלילה אוטומטית רק אם נשלחה הודעה חדשה או שהמשתמש היה כבר בתחתית
       if (forceScrollToBottom || isNearBottom) {
         chatStream.scrollTop = chatStream.scrollHeight;
       }
