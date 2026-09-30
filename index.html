@@ -18,6 +18,9 @@
       <h1 class="text-base sm:text-xl font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
     </div>
     <div class="flex items-center gap-2">
+      <button onclick="copyRoomLink()" id="copy-btn" class="bg-indigo-600 hover:bg-indigo-800 text-xs px-3 py-1.5 rounded transition border border-indigo-500">
+        העתק קישור לחדר
+      </button>
       <button onclick="clearChatPrompt()" class="bg-indigo-800 hover:bg-indigo-900 text-xs px-3 py-1.5 rounded transition">
         איפוס חדר
       </button>
@@ -48,7 +51,6 @@
   </footer>
 
   <script>
-    // כתובת ה-Exec המעודכנת של השרת ב-Apps Script
     const API_URL = "https://script.google.com/macros/s/AKfycbyi9xbQ7LQOq0g05ZrBr9rZkoSDXhLcVOaT-thgXry50lxMF3CghDHZE_FZvjboJcAU/exec";
 
     let localHistory = [];
@@ -73,7 +75,7 @@
     }
 
     async function fetchHistory(isBackground = false) {
-      if (isSending) return; // מניעת דריסה בזמן שליחה מקומית
+      if (isSending) return;
       try {
         const history = await callApi('getHistory');
         if (JSON.stringify(history) !== JSON.stringify(localHistory)) {
@@ -125,7 +127,6 @@
       input.value = '';
       document.getElementById('send-btn').disabled = true;
 
-      // עדכון אופטימיסטי מיידי במסך לחוויה חלקה ללא דיליי
       const tempItem = {
         original: text,
         translated: "מעבד תרגום...",
@@ -162,6 +163,22 @@
       }
     }
 
+    function copyRoomLink() {
+      const roomUrl = window.location.href;
+      navigator.clipboard.writeText(roomUrl).then(() => {
+        const btn = document.getElementById('copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "הקישור הועתק! ✓";
+        btn.classList.add('bg-green-600');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('bg-green-600');
+        }, 2000);
+      }).catch(err => {
+        alert("שגיאה בהעתקת הקישור");
+      });
+    }
+
     function handleKeyPress(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -175,7 +192,6 @@
       return text.toString().replace(/[&<>"']/g, m => map[m]);
     }
 
-    // טעינה ראשונית וסנכרון שקט ברקע כל 3 שניות
     fetchHistory();
     setInterval(() => fetchHistory(true), 3000);
   </script>
