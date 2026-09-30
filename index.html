@@ -4,166 +4,180 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>גשר שפות: עברית-אמהרית | היחידה לקידום נוער נוף הגליל</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap');
+    body { font-family: 'Assistant', sans-serif; }
+  </style>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col justify-between font-sans">
+<body class="bg-slate-100 min-h-screen flex flex-col justify-between">
 
-  <!-- כותרת עליונה -->
-  <header class="bg-indigo-700 text-white shadow-md p-4 flex justify-between items-center">
-    <div>
-      <h1 class="text-lg font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
-      <p class="text-xs text-indigo-200">תוכנית היל"ה | נוף הגליל</p>
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white shadow-md p-3 sm:p-4 flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <h1 class="text-base sm:text-xl font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
     </div>
-    <button onclick="resetChatPrompt()" class="bg-indigo-800 hover:bg-indigo-900 text-xs px-3 py-1.5 rounded transition">
-      איפוס חדר
-    </button>
+    <div class="flex items-center gap-2">
+      <button onclick="clearChatPrompt()" class="bg-indigo-800 hover:bg-indigo-900 text-xs px-3 py-1.5 rounded transition">
+        איפוס חדר
+      </button>
+    </div>
   </header>
 
-  <!-- אזור גלילת הודעות -->
-  <main id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
-    <!-- הודעות יטענו כאן דינמית -->
+  <!-- Chat Box -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3 overflow-hidden">
+    <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-3 sm:p-4 overflow-y-auto flex flex-col gap-3">
+      <div id="loading-msg" class="text-center text-slate-400 py-10">טוען היסטוריית שיחה...</div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="bg-white border border-slate-200 rounded-xl shadow p-3 flex flex-col gap-2">
+      <div class="flex gap-2">
+        <textarea id="message-input" rows="2" placeholder="הקלד בעברית או באמהרית והתרגום יתבצע אוטומטית (לחץ Enter)..." class="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" onkeydown="handleKeyPress(event)"></textarea>
+        <button onclick="sendMessage()" id="send-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 rounded-lg font-medium transition shadow text-sm sm:text-base flex items-center justify-center">
+          שליחה
+        </button>
+      </div>
+    </div>
   </main>
 
-  <!-- אזור הקלדה מהיר מעוגן בתחתית -->
-  <footer class="bg-white border-t border-slate-200 p-3 shadow-lg">
-    <form id="chatForm" onsubmit="sendMessage(event)" class="flex gap-2 max-w-4xl mx-auto">
-      <input type="text" id="msgText" placeholder="הקלד בעברית או באמהרית והתרגום יתבצע אוטומטית (לחץ Enter)..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required autofocus>
-      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
-        שליחה
-      </button>
-    </form>
-    
-    <!-- חתימה פדגוגית קבועה -->
-    <div class="text-center text-[10px] text-slate-400 mt-2 border-t border-slate-100 pt-1">
-      היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
-      © תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
-    </div>
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-2.5 text-center text-xs text-slate-500 leading-relaxed">
+    היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
+    © תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
   </footer>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyi9xbQ7LQOq0g05ZrBr9rZkoSDXhLcVOaT-thgXry50lxMF3CghDHZE_FZvjboJcAU/exec';
-    let cachedMessages = [];
+    // הדבק כאן את כתובת ה-Exec המעודכנת שלך מ-Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
+
+    let localHistory = [];
     let isSending = false;
 
-    async function fetchMessages(isBackground = true) {
-      if (isSending) return; // לא למשוך נתונים בזמן שליחה כדי למנוע דריסה
+    async function callApi(action, payload = {}) {
       try {
-        const response = await fetch(`${WEB_APP_URL}?action=getMessages`);
-        const messages = await response.json();
-        
-        // עדכון המסך רק אם יש שינוי אמיתי בכמות או בתוכן ההודעות
-        if (JSON.stringify(messages) !== JSON.stringify(cachedMessages)) {
-          cachedMessages = messages;
-          renderMessages(cachedMessages);
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action, ...payload })
+        });
+        const resJson = await response.json();
+        if (resJson.status === 'success') {
+          return resJson.data;
+        } else {
+          throw new Error(resJson.message || "שגיאת שרת");
         }
       } catch (err) {
-        console.error('שגיאה בטעינת הודעות:', err);
+        console.error("API Error:", err);
+        throw err;
       }
     }
 
-    function renderMessages(messages) {
-      const container = document.getElementById('chatContainer');
-      
-      if (!messages || messages.length === 0) {
-        container.innerHTML = `<div class="text-center text-slate-400 my-auto text-sm">אין הודעות בחדר כרגע. התחל שיחה חדשה!</div>`;
+    async function fetchHistory(isBackground = false) {
+      if (isSending) return; // מניעת דריסה בזמן שליחה מקומית
+      try {
+        const history = await callApi('getHistory');
+        if (JSON.stringify(history) !== JSON.stringify(localHistory)) {
+          localHistory = history || [];
+          renderChat();
+        }
+      } catch (err) {
+        console.error("שגיאת סנכרון", err);
+      }
+    }
+
+    function renderChat() {
+      const chatBox = document.getElementById('chat-box');
+      if (!localHistory || localHistory.length === 0) {
+        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">השיחה ריקה כרגע. התחל לכתוב למטה!</div>`;
         return;
       }
 
-      // שמירת מיקום הגלילה הנוכחי כדי לא להקפיץ את המשתמש אם גלל למעלה
-      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-
-      container.innerHTML = '';
-      messages.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `flex flex-col max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-sm bg-white border border-slate-200`;
-        
-        div.innerHTML = `
-          <div class="flex justify-between items-center mb-1 text-xs text-slate-400 border-b pb-1">
-            <span>מערכת גשר שפות</span>
-            <span>${msg.timestamp || 'עכשיו'}</span>
+      let html = '';
+      localHistory.forEach(item => {
+        html += `
+          <div class="flex flex-col items-start gap-1 bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-sm">
+            <div class="flex justify-between w-full text-xs text-indigo-700 font-bold">
+              <span>${item.sender || 'מערכת גשר שפות'}</span>
+              <span class="text-[10px] text-slate-400 font-normal">${item.time || ''}</span>
+            </div>
+            <div class="text-sm sm:text-base text-slate-900 font-medium" dir="auto">${escapeHtml(item.original)}</div>
+            <div class="border-t border-slate-200 pt-1.5 w-full text-sm sm:text-base text-indigo-900 font-semibold" dir="auto">
+              ${escapeHtml(item.translated)}
+            </div>
           </div>
-          <div class="text-sm text-slate-800 font-medium py-1" dir="rtl">עברית: ${escapeHtml(msg.he || '')}</div>
-          <div class="text-sm text-indigo-600 font-medium py-1 border-t border-dashed border-slate-100" dir="ltr">አማርኛ: ${escapeHtml(msg.am || 'מתרגם...')}</div>
         `;
-        container.appendChild(div);
       });
-      
-      if (isAtBottom) {
-        container.scrollTop = container.scrollHeight;
+
+      const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 100;
+      chatBox.innerHTML = html;
+      if (isAtBottom || !chatBox.dataset.scrolled) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+        chatBox.dataset.scrolled = "true";
       }
     }
 
-    async function sendMessage(e) {
-      if (e) e.preventDefault();
-      const inputField = document.getElementById('msgText');
-      const text = inputField.value.trim();
-      
+    async function sendMessage() {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
       if (!text || isSending) return;
-      inputField.value = '';
-      isSending = true;
 
-      // Optimistic UI: הצגה מיידית של ההודעה במסך עוד לפני שהשרת מגיב
-      const hasHebrew = /[\u0590-\u05FF]/.test(text);
-      const tempMsg = {
-        he: hasHebrew ? text : 'ממתין לתרגום...',
-        am: hasHebrew ? 'מתרגם...' : text,
-        timestamp: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
+      isSending = true;
+      input.value = '';
+      document.getElementById('send-btn').disabled = true;
+
+      // עדכון אופטימיסטי מיידי במסך לחוויה חלקה ללא דיליי
+      const tempItem = {
+        original: text,
+        translated: "מעבד תרגום...",
+        time: "עכשיו",
+        sender: "מערכת גשר שפות"
       };
-      
-      cachedMessages.push(tempMsg);
-      renderMessages(cachedMessages);
+      localHistory.push(tempItem);
+      renderChat();
 
       try {
-        const res = await fetch(`${WEB_APP_URL}?action=sendMessage&text=${encodeURIComponent(text)}`);
-        const result = await res.json();
-        if (result.status === 'success' && result.data) {
-          // החלפת הודעת הדמה בנתונים האמיתיים מהשרת
-          cachedMessages[cachedMessages.length - 1] = result.data;
-          renderMessages(cachedMessages);
-        }
+        const newHistory = await callApi('sendMessage', { text });
+        localHistory = newHistory || [];
+        renderChat();
       } catch (err) {
-        console.error('שגיאה בשליחת הודעה:', err);
-        fetchMessages(false);
+        alert("שגיאה בשליחת הודעה: " + err.message);
+        fetchHistory();
       } finally {
         isSending = false;
+        document.getElementById('send-btn').disabled = false;
+        input.focus();
       }
     }
 
-    // תמיכה מלאה במקש Enter לשליחה מהירה
-    document.getElementById('msgText').addEventListener('keydown', function(e) {
+    async function clearChatPrompt() {
+      const pwd = prompt("הכנס סיסמת מנהל לאיפוס השיחה (ברירת מחדל: 111):");
+      if (!pwd) return;
+      try {
+        const history = await callApi('clearChat', { password: pwd });
+        localHistory = history || [];
+        renderChat();
+        alert("השיחה אופסה בהצלחה.");
+      } catch (err) {
+        alert("שגיאה באיפוס: " + err.message);
+      }
+    }
+
+    function handleKeyPress(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
-    });
-
-    async function resetChatPrompt() {
-      const pwd = prompt('הכנס סיסמת מנהל לאיפוס החדר:');
-      if (!pwd) return;
-      
-      try {
-        const res = await fetch(`${WEB_APP_URL}?action=resetChat&pwd=${encodeURIComponent(pwd)}`);
-        const result = await res.json();
-        if (result.status === 'success') {
-          alert('החדר אופס בהצלחה.');
-          cachedMessages = [];
-          renderMessages(cachedMessages);
-        } else {
-          alert('שגיאה: ' + result.message);
-        }
-      } catch (err) {
-        alert('שגיאה בתקשורת מול השרת.');
-      }
     }
 
     function escapeHtml(text) {
-      return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      if (!text) return '';
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.toString().replace(/[&<>"']/g, m => map[m]);
     }
 
-    // טעינה ראשונית ורענון ברקע כל 3 שניות
-    fetchMessages(false);
-    setInterval(() => fetchMessages(true), 3000);
+    // טעינה ראשונית וסנכרון שקט ברקע כל 3 שניות
+    fetchHistory();
+    setInterval(() => fetchHistory(true), 3000);
   </script>
 </body>
 </html>
