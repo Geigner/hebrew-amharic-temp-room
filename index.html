@@ -178,12 +178,11 @@
 
     async function verifyAdminPassword(pwd) {
       try {
-        const history = await callApi('clearChat', { password: pwd });
-        localHistory = history || [];
-        renderChat();
+        // בדיקת סיסמה מול פעולה בטוחה שלא מוחקת כלום (למשל שליפת ההיסטוריה עם סיסמה או אימות מול השרת)
+        // לצורך האימות נשתמש בקריאה שמחזירה את ההיסטוריה תחת אימות סיסמה
+        const history = await callApi('getHistory', { password: pwd });
         isAdminAuthenticated = true;
         showAdminControls();
-        alert("סיסמה אומתה בהצלחה! מצב ניהול פתוח.");
       } catch (err) {
         alert("סיסמת מנהל שגויה.");
       }
