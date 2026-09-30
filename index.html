@@ -16,7 +16,6 @@
   <header class="bg-indigo-700 text-white shadow-md p-3 sm:p-4 flex justify-between items-center">
     <div class="flex items-center gap-2">
       <h1 class="text-base sm:text-xl font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
-      <span id="room-badge" class="text-xs bg-indigo-800 px-2 py-0.5 rounded text-indigo-200 hidden">חדר פרטי</span>
     </div>
     
     <!-- אזור הניהול -->
@@ -74,13 +73,12 @@
     let isSending = false;
     let isAdminAuthenticated = false;
 
-    // ניהול מזהה חדר (Room ID) מתוך כתובת ה-URL או יצירה אוטומטית
+    // ניהול מזהה חדר דינמי ב-URL
     function getRoomId() {
       const params = new URLSearchParams(window.location.search);
       let roomId = params.get('room');
       if (!roomId) {
-        // אם אין חדר בכתובת, ניצור חדר חדש עם מזהה אקראי ונעדכן את ה-URL בלי לרענן את הדף
-        roomId = 'room_' + Math.random().toString(36.substring(2, 9));
+        roomId = 'room_' + Math.random().toString(36).substring(2, 9);
         params.set('room', roomId);
         const newUrl = window.location.pathname + '?' + params.toString();
         window.history.replaceState({}, '', newUrl);
@@ -198,10 +196,12 @@
 
     async function verifyAdminPassword(pwd) {
       try {
+        // בדיקת סיסמה מול פעולה מאומתת בשרת
         await callApi('getHistory', { password: pwd });
         isAdminAuthenticated = true;
         showAdminControls();
       } catch (err) {
+        // אם הסיסמה שגויה השרת יזרוק שגיאה
         alert("סיסמת מנהל שגויה.");
       }
     }
@@ -220,10 +220,10 @@
     }
 
     function createNewRoom() {
-      if (confirm("האם לפתוח חדר שיחה חדש ונקי עבור משתמש אחר?")) {
+      if (confirm("האם לפתוח חדר שיחה חדש ונקי?")) {
         const newRoomId = 'room_' + Math.random().toString(36).substring(2, 9);
         const newUrl = window.location.pathname + '?room=' + newRoomId;
-        window.location.href = newUrl; // מעבר לכתובת החדשה עם החדר החדש
+        window.location.href = newUrl;
       }
     }
 
@@ -252,16 +252,6 @@
       }).catch(err => {
         alert("שגיאה בהעתקת הקישור");
       });
-    }
-
-    function handleKeyPress(e) {
-      (e.key === 'Escape') && lockAdminPanel();
-      if (e.key === 'Enter' + '' && !e.shiftKey) { // תיקון תמיכה ב-Enter
-      }
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
     }
 
     function handleKeyPress(e) {
