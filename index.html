@@ -26,14 +26,17 @@
       </button>
 
       <!-- פקדי הניהול (מוסתרים כברירת מחדל עד להזנת סיסמה) -->
-      <div id="admin-controls" class="hidden flex items-center gap-2 bg-indigo-800 p-1.5 rounded-lg border border-indigo-500 shadow-lg">
-        <button onclick="copyRoomLink()" id="copy-btn" class="bg-indigo-700 hover:bg-indigo-600 text-xs px-3 py-1.5 rounded transition">
+      <div id="admin-controls" class="hidden flex items-center gap-1.5 bg-indigo-800 p-1.5 rounded-lg border border-indigo-500 shadow-lg flex-wrap">
+        <button onclick="copyRoomLink()" id="copy-btn" class="bg-indigo-700 hover:bg-indigo-600 text-xs px-2.5 py-1.5 rounded transition">
           העתק קישור לחדר
         </button>
-        <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-800 text-xs px-3 py-1.5 rounded transition" title="יצירת חדר שיחה חדש ונקי">
+        <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-800 text-xs px-2.5 py-1.5 rounded transition" title="יצירת חדר שיחה חדש ונקי">
           חדר חדש
         </button>
-        <button onclick="clearChatAction()" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-1.5 rounded transition">
+        <button onclick="openRoomsManager()" class="bg-amber-700 hover:bg-amber-800 text-xs px-2.5 py-1.5 rounded transition" title="ניהול חדרים פתוחים">
+          רשימת חדרים 🗂️
+        </button>
+        <button onclick="clearChatAction()" class="bg-rose-700 hover:bg-rose-800 text-xs px-2.5 py-1.5 rounded transition">
           איפוס חדר
         </button>
         <button onclick="lockAdminPanel()" class="text-xs px-2 py-1 text-indigo-200 hover:text-white font-bold" title="סגור מצב ניהול (ESC)">
@@ -60,6 +63,22 @@
     </div>
   </main>
 
+  <!-- Modal: Rooms Manager -->
+  <div id="rooms-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 max-h-[80vh]">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-800">ניהול חדרים פתוחים במערכת</h3>
+        <button onclick="closeRoomsManager()" class="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+      </div>
+      <div id="rooms-list-container" class="overflow-y-auto flex-1 flex flex-col gap-2">
+        <div class="text-center text-slate-400 py-4">טוען רשימת חדרים...</div>
+      </div>
+      <div class="border-t pt-3 flex justify-end">
+        <button onclick="closeRoomsManager()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg text-sm font-medium transition">סגור</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="bg-white border-t border-slate-200 py-2.5 text-center text-xs text-slate-500 leading-relaxed">
     היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
@@ -72,8 +91,8 @@
     let localHistory = [];
     let isSending = false;
     let isAdminAuthenticated = false;
+    let cachedAdminPassword = '';
 
-    // ניהול מזהה חדר דינמי ב-URL
     function getRoomId() {
       const params = new URLSearchParams(window.location.search);
       let roomId = params.get('room');
@@ -92,7 +111,7 @@
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action, roomId: currentRoomId, ...payload })
+          body: JSON.stringify({ action, roomId: currentRoomId, password: cachedAdminPassword, ...payload })
         });
         const resJson = await response.json();
         if (resJson.status === 'success') {
@@ -196,21 +215,22 @@
 
     async function verifyAdminPassword(pwd) {
       try {
-        // בדיקת סיסמה מול פעולה מאומתת בשרת
-        await callApi('getHistory', { password: pwd });
+        cachedAdminPassword = pwd;
+        await callApi('getHistory');
         isAdminAuthenticated = true;
         showAdminControls();
       } catch (err) {
-        // אם הסיסמה שגויה השרת יזרוק שגיאה
+        cachedAdminPassword = '';
         alert("סיסמת מנהל שגויה.");
       }
     }
 
     async function clearChatAction() {
-      const pwd = prompt("הכנס סיסמת מנהל לאיפוס השיחה:");
+      const pwd = prompt("הכנס סיסמת מנהל לאיפוס השיחה בחדר הנוכחי:");
       if (!pwd) return;
+      cachedAdminPassword = pwd;
       try {
-        const history = await callApi('clearChat', { password: pwd });
+        const history = await callApi('clearChat');
         localHistory = history || [];
         renderChat();
         alert("השיחה אופסה בהצלחה.");
@@ -227,6 +247,70 @@
       }
     }
 
+    async function openRoomsManager() {
+      if (!isAdminAuthenticated) {
+        const pwd = prompt("הכנס סיסמת מנהל לצפייה בחדרים:");
+        if (!pwd) return;
+        cachedAdminPassword = pwd;
+      }
+      
+      document.getElementById('rooms-modal').classList.remove('hidden');
+      const container = document.getElementById('rooms-list-container');
+      container.innerHTML = `<div class="text-center text-slate-400 py-4">טוען רשימת חדרים...</div>`;
+
+      try {
+        const rooms = await callApi('getRoomsList');
+        renderRoomsList(rooms);
+        isAdminAuthenticated = true;
+        showAdminControls();
+      } catch (err) {
+        alert("שגיאה בטעינת החדרים (אולי סיסמה שגויה)");
+        document.getElementById('rooms-modal').classList.add('hidden');
+      }
+    }
+
+    function closeRoomsManager() {
+      document.getElementById('rooms-modal').classList.add('hidden');
+    }
+
+    function renderRoomsList(rooms) {
+      const container = document.getElementById('rooms-list-container');
+      if (!rooms || rooms.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 py-6">אין חדרים פעילים כרגע בזיכרון.</div>`;
+        return;
+      }
+
+      let html = '';
+      rooms.forEach(rId => {
+        const roomUrl = window.location.origin + window.location.pathname + '?room=' + rId;
+        const isCurrent = rId === currentRoomId;
+        html += `
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-200 p-3 rounded-xl gap-2">
+            <div class="flex flex-col truncate">
+              <span class="text-xs font-bold text-indigo-700">${rId} ${isCurrent ? '(חדר נוכחי)' : ''}</span>
+              <span class="text-[11px] text-slate-500 truncate select-all">${roomUrl}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="navigator.clipboard.writeText('${roomUrl}')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs px-2.5 py-1.5 rounded transition">העתק</button>
+              <a href="${roomUrl}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded transition">מעבר</a>
+              <button onclick="closeSpecificRoom('${rId}')" class="bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs px-2 py-1.5 rounded transition" title="סגור חדר">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    async function closeSpecificRoom(targetRoom) {
+      if (!confirm(`האם לסגור ולמחוק את החדר ${targetRoom}?`)) return;
+      try {
+        const updatedRooms = await callApi('closeRoom', { targetRoom });
+        renderRoomsList(updatedRooms);
+      } catch (err) {
+        alert("שגיאה בסגירת החדר: " + err.message);
+      }
+    }
+
     function showAdminControls() {
       document.getElementById('admin-login-btn').classList.add('hidden');
       document.getElementById('admin-controls').classList.remove('hidden');
@@ -234,6 +318,7 @@
 
     function lockAdminPanel() {
       isAdminAuthenticated = false;
+      cachedAdminPassword = '';
       document.getElementById('admin-controls').classList.add('hidden');
       document.getElementById('admin-login-btn').classList.remove('hidden');
     }
@@ -249,14 +334,13 @@
           btn.innerText = originalText;
           btn.classList.remove('bg-green-600');
         }, 2000);
-      }).catch(err => {
-        alert("שגיאה בהעתקת הקישור");
       });
     }
 
     function handleKeyPress(e) {
       if (e.key === 'Escape') {
         lockAdminPanel();
+        closeRoomsManager();
       }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
