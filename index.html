@@ -16,6 +16,7 @@
   <header class="bg-indigo-700 text-white shadow-md p-3 sm:p-4 flex justify-between items-center">
     <div class="flex items-center gap-2">
       <h1 class="text-base sm:text-xl font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
+      <span id="room-badge" class="text-xs bg-indigo-800 px-2 py-0.5 rounded text-indigo-200 hidden">חדר פרטי</span>
     </div>
     
     <!-- אזור הניהול -->
@@ -29,6 +30,9 @@
       <div id="admin-controls" class="hidden flex items-center gap-2 bg-indigo-800 p-1.5 rounded-lg border border-indigo-500 shadow-lg">
         <button onclick="copyRoomLink()" id="copy-btn" class="bg-indigo-700 hover:bg-indigo-600 text-xs px-3 py-1.5 rounded transition">
           העתק קישור לחדר
+        </button>
+        <button onclick="createNewRoom()" class="bg-emerald-700 hover:bg-emerald-800 text-xs px-3 py-1.5 rounded transition" title="יצירת חדר שיחה חדש ונקי">
+          חדר חדש
         </button>
         <button onclick="clearChatAction()" class="bg-rose-700 hover:bg-rose-800 text-xs px-3 py-1.5 rounded transition">
           איפוס חדר
@@ -70,11 +74,27 @@
     let isSending = false;
     let isAdminAuthenticated = false;
 
+    // ניהול מזהה חדר (Room ID) מתוך כתובת ה-URL או יצירה אוטומטית
+    function getRoomId() {
+      const params = new URLSearchParams(window.location.search);
+      let roomId = params.get('room');
+      if (!roomId) {
+        // אם אין חדר בכתובת, ניצור חדר חדש עם מזהה אקראי ונעדכן את ה-URL בלי לרענן את הדף
+        roomId = 'room_' + Math.random().toString(36.substring(2, 9));
+        params.set('room', roomId);
+        const newUrl = window.location.pathname + '?' + params.toString();
+        window.history.replaceState({}, '', newUrl);
+      }
+      return roomId;
+    }
+
+    const currentRoomId = getRoomId();
+
     async function callApi(action, payload = {}) {
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action, ...payload })
+          body: JSON.stringify({ action, roomId: currentRoomId, ...payload })
         });
         const resJson = await response.json();
         if (resJson.status === 'success') {
@@ -104,7 +124,7 @@
     function renderChat() {
       const chatBox = document.getElementById('chat-box');
       if (!localHistory || localHistory.length === 0) {
-        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">השיחה ריקה כרגע. התחל לכתוב למטה!</div>`;
+        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">השיחה בחדר זה ריקה. התחל לכתוב למטה!</div>`;
         return;
       }
 
@@ -178,9 +198,7 @@
 
     async function verifyAdminPassword(pwd) {
       try {
-        // בדיקת סיסמה מול פעולה בטוחה שלא מוחקת כלום (למשל שליפת ההיסטוריה עם סיסמה או אימות מול השרת)
-        // לצורך האימות נשתמש בקריאה שמחזירה את ההיסטוריה תחת אימות סיסמה
-        const history = await callApi('getHistory', { password: pwd });
+        await callApi('getHistory', { password: pwd });
         isAdminAuthenticated = true;
         showAdminControls();
       } catch (err) {
@@ -198,6 +216,14 @@
         alert("השיחה אופסה בהצלחה.");
       } catch (err) {
         alert("שגיאה באיפוס: " + err.message);
+      }
+    }
+
+    function createNewRoom() {
+      if (confirm("האם לפתוח חדר שיחה חדש ונקי עבור משתמש אחר?")) {
+        const newRoomId = 'room_' + Math.random().toString(36).substring(2, 9);
+        const newUrl = window.location.pathname + '?room=' + newRoomId;
+        window.location.href = newUrl; // מעבר לכתובת החדשה עם החדר החדש
       }
     }
 
@@ -226,6 +252,16 @@
       }).catch(err => {
         alert("שגיאה בהעתקת הקישור");
       });
+    }
+
+    function handleKeyPress(e) {
+      (e.key === 'Escape') && lockAdminPanel();
+      if (e.key === 'Enter' + '' && !e.shiftKey) { // תיקון תמיכה ב-Enter
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     }
 
     function handleKeyPress(e) {
