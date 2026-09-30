@@ -51,8 +51,8 @@
   </footer>
 
   <script>
-    // יש להחליף בכתובת ה-Web App של Google Apps Script לאחר פריסה
-    const WEB_APP_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+    // כתובת ה-Web App המעודכנת של Google Apps Script
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyi9xbQ7LQOq0g05ZrBr9rZkoSDXhLcVOaT-thgXry50lxMF3CghDHZE_FZvjboJcAU/exec';
     let lastMessagesSignature = '';
 
     async function fetchMessages() {
@@ -60,7 +60,7 @@
         const response = await fetch(`${WEB_APP_URL}?action=getMessages`);
         const messages = await response.json();
         
-        // Smart Diffing: עדכון המסך רק אם יש שינוי בהיסטוריה
+        // Smart Diffing: עדכון המסך רק אם יש שינוי אמיתי בהיסטוריה
         const signature = JSON.stringify(messages);
         if (signature !== lastMessagesSignature) {
           lastMessagesSignature = signature;
@@ -81,7 +81,6 @@
       }
 
       messages.forEach(msg => {
-        const isHe = msg.originalLang === 'he';
         const div = document.createElement('div');
         div.className = `flex flex-col max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-sm bg-white border border-slate-200`;
         
@@ -91,7 +90,7 @@
             <span>${msg.timestamp}</span>
           </div>
           <div class="text-sm text-slate-800 font-medium py-1">${escapeHtml(msg.he)}</div>
-          <div class="text-sm text-slate-600 font-medium py-1 border-t border-dashed border-slate-100 font-amharic" dir="ltr">${escapeHtml(msg.am)}</div>
+          <div class="text-sm text-slate-600 font-medium py-1 border-t border-dashed border-slate-100" dir="ltr">${escapeHtml(msg.am)}</div>
         `;
         container.appendChild(div);
       });
@@ -134,7 +133,7 @@
     }
 
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/lt;/g, "<").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     // רענון אוטומטי כל 3 שניות
