@@ -27,19 +27,11 @@
 
   <!-- אזור הקלדה מהיר מעוגן בתחתית -->
   <footer class="bg-white border-t border-slate-200 p-3 shadow-lg">
-    <form id="chatForm" onsubmit="sendMessage(event)" class="flex flex-col sm:flex-row gap-2 max-w-4xl mx-auto">
-      <div class="flex gap-2">
-        <select id="msgLang" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium">
-          <option value="he">עברית ➔ אמהרית</option>
-          <option value="am">אמהרית ➔ עברית</option>
-        </select>
-      </div>
-      <div class="flex-1 flex gap-2">
-        <input type="text" id="msgText" placeholder="הקלד הודעה ולחץ Enter..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required autofocus>
-        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
-          שליחה
-        </button>
-      </div>
+    <form id="chatForm" onsubmit="sendMessage(event)" class="flex gap-2 max-w-4xl mx-auto">
+      <input type="text" id="msgText" placeholder="הקלד בעברית או באמהרית והתרגום יתבצע אוטומטית (לחץ Enter)..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required autofocus>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+        שליחה
+      </button>
     </form>
     
     <!-- חתימה פדגוגית קבועה -->
@@ -98,13 +90,12 @@
     async function sendMessage(e) {
       if (e) e.preventDefault();
       const text = document.getElementById('msgText').value;
-      const lang = document.getElementById('msgLang').value;
       
       if (!text.trim()) return;
       document.getElementById('msgText').value = '';
 
       try {
-        await fetch(`${WEB_APP_URL}?action=sendMessage&text=${encodeURIComponent(text)}&lang=${lang}`);
+        await fetch(`${WEB_APP_URL}?action=sendMessage&text=${encodeURIComponent(text)}`);
         fetchMessages();
       } catch (err) {
         console.error('שגיאה בשליחת הודעה:', err);
