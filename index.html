@@ -3,271 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>גשר שפות עברית אמהרית - היחידה לקידום נוער נוף הגליל</title>
-  <!-- Tailwind CSS -->
+  <title>גשר שפות: עברית-אמהרית | היחידה לקידום נוער נוף הגליל</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap');
-    body { font-family: 'Assistant', sans-serif; }
-  </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col justify-between">
+<body class="bg-slate-100 h-screen flex flex-col justify-between font-sans">
 
-  <!-- Header -->
-  <header class="bg-emerald-900 text-white shadow-md p-3 sm:p-4 flex flex-wrap justify-between items-center gap-2">
-    <div class="flex items-center gap-2">
-      <span class="text-xl sm:text-2xl">🌉</span>
-      <h1 class="text-base sm:text-xl font-bold">גשר שפות – חדר שיחה</h1>
+  <!-- כותרת עליונה -->
+  <header class="bg-indigo-700 text-white shadow-md p-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold">גשר שפות: עברית ⇄ אמהרית</h1>
+      <p class="text-xs text-indigo-200">תוכנית היל"ה | נוף הגליל</p>
     </div>
-    
-    <div class="flex items-center gap-2 flex-wrap">
-      <div id="room-badge" class="text-xs bg-emerald-800 text-emerald-200 px-2.5 py-1 rounded-full hidden"></div>
-      <button onclick="copyRoomLink()" class="bg-emerald-700 hover:bg-emerald-600 text-xs px-3 py-1.5 rounded transition flex items-center gap-1 shadow" title="העתק קישור לחדר הנוכחי לשליחה לתלמיד">
-        📋 העתק קישור
-      </button>
-      <button onclick="openAdminModal()" class="bg-emerald-800 hover:bg-emerald-700 text-xs px-3 py-1.5 rounded transition">
-        🔒 מנהל (ניקוי שיחה)
-      </button>
-    </div>
+    <button onclick="resetChatPrompt()" class="bg-indigo-800 hover:bg-indigo-900 text-xs px-3 py-1.5 rounded transition">
+      איפוס חדר
+    </button>
   </header>
 
-  <!-- Main Chat Container -->
-  <main class="flex-1 max-w-4xl w-full mx-auto p-2 sm:p-4 flex flex-col gap-3">
-    <!-- Chat History Box -->
-    <div id="chat-box" class="bg-white border border-slate-200 rounded-xl shadow-inner flex-1 p-3 sm:p-4 overflow-y-auto h-[50vh] sm:max-h-[60vh] sm:min-h-[400px] flex flex-col gap-3">
-      <div class="text-center text-slate-400 py-10" id="loading-initial">טוען היסטוריית שיחה...</div>
-    </div>
-
-    <!-- Input Area -->
-    <div class="bg-white border border-slate-200 rounded-xl shadow p-3 sm:p-4 flex flex-col gap-2.5">
-      <div class="flex items-center justify-between text-xs sm:text-sm text-slate-600 flex-wrap gap-2">
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-1 cursor-pointer">
-            <input type="radio" name="sourceLang" value="he" checked class="text-emerald-600 focus:ring-emerald-500">
-            <span>עברית 🇮🇱</span>
-          </label>
-          <label class="flex items-center gap-1 cursor-pointer">
-            <input type="radio" name="sourceLang" value="am" class="text-emerald-600 focus:ring-emerald-500">
-            <span>אמהרית 🇪🇹</span>
-          </label>
-        </div>
-        <span id="typing-status" class="text-[11px] sm:text-xs text-slate-400">מתחבר...</span>
-      </div>
-
-      <div class="flex gap-2">
-        <textarea id="message-input" rows="2" placeholder="הקלד משפט בעברית..." class="flex-1 border border-slate-300 rounded-lg p-2.5 sm:p-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" onkeydown="handleKeyPress(event)"></textarea>
-        <button onclick="sendMessage()" id="send-btn" class="bg-emerald-700 hover:bg-emerald-800 text-white px-4 sm:px-6 rounded-lg font-medium transition flex items-center justify-center gap-1.5 shadow text-sm sm:text-base">
-          <span>שלח</span>
-          <span>🚀</span>
-        </button>
-      </div>
-    </div>
+  <!-- אזור גלילת הודעות -->
+  <main id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+    <!-- הודעות יטענו כאן דינמית -->
   </main>
 
-  <!-- Admin Password Modal -->
-  <div id="admin-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4">
-      <h3 class="text-lg font-bold text-slate-800">ניקוי שיחה (מנהל)</h3>
-      <p class="text-sm text-slate-600">הכנס סיסמת מנהל למחיקת היסטוריית השיחה מהשרת:</p>
-      <input type="password" id="admin-password-input" placeholder="סיסמה" class="border border-slate-300 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500" onkeydown="handleAdminKeyPress(event)">
-      <div class="flex gap-2 justify-end mt-2">
-        <button onclick="closeAdminModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm">ביטול</button>
-        <button onclick="clearChatAction()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium">אשר מחיקה</button>
+  <!-- אזור הקלדה מעוגן בתחתית -->
+  <footer class="bg-white border-t border-slate-200 p-3 shadow-lg">
+    <form id="chatForm" onsubmit="sendMessage(event)" class="flex flex-col sm:flex-row gap-2 max-w-4xl mx-auto">
+      <div class="flex gap-2">
+        <input type="text" id="senderName" placeholder="שמך..." class="w-28 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        <select id="msgLang" class="border border-slate-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="he">עברית ➔ אמהרית</option>
+          <option value="am">אמהרית ➔ עברית</option>
+        </select>
       </div>
+      <div class="flex-1 flex gap-2">
+        <input type="text" id="msgText" placeholder="הקלד הודעה..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
+          שליחה
+        </button>
+      </div>
+    </form>
+    
+    <!-- חתימה פדגוגית קבועה -->
+    <div class="text-center text-[10px] text-slate-400 mt-2 border-t border-slate-100 pt-1">
+      היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
+      © תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
     </div>
-  </div>
-
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 leading-relaxed">
-    היחידה לקידום נוער נוף הגליל | תוכנית היל"ה<br>
-    © תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי
   </footer>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwBQoupgTQT9R9ECmzqVZU9ceNT3CarEpXPCpXYFX9wqLKUp8YLbUN8QzSsv2UiNFX8gQ/exec";
+    // יש להחליף בכתובת ה-Web App של Google Apps Script לאחר פריסה
+    const WEB_APP_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+    let lastMessagesSignature = '';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomName = urlParams.get('room') || 'general_room';
-    
-    if (urlParams.get('room')) {
-      const badge = document.getElementById('room-badge');
-      badge.innerText = `חדר: ${roomName}`;
-      badge.classList.remove('hidden');
-    }
-
-    let clientId = localStorage.getItem('hila_client_id');
-    if (!clientId) {
-      clientId = 'client_' + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem('hila_client_id', clientId);
-    }
-
-    function copyRoomLink() {
-      const currentUrl = window.location.href;
-      navigator.clipboard.writeText(currentUrl).then(() => {
-        alert("קישור לחדר השיחה הועתק בהצלחה! שלח אותו כעת לתלמיד.");
-      }).catch(err => {
-        prompt("העתק את הקישור הבא:", currentUrl);
-      });
-    }
-
-    document.querySelectorAll('input[name="sourceLang"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        const input = document.getElementById('message-input');
-        input.placeholder = e.target.value === 'he' ? "הקלד משפט בעברית..." : "הקלד משפט באמהרית...";
-      });
-    });
-
-    async function callApi(action, payload = {}) {
+    async function fetchMessages() {
       try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action, roomName, ...payload })
-        });
+        const response = await fetch(`${WEB_APP_URL}?action=getMessages`);
+        const messages = await response.json();
         
-        const text = await response.text();
-        let resJson;
-        try {
-          resJson = JSON.parse(text);
-        } catch (e) {
-          throw new Error("השרת החזיר תשובה שאינה JSON תקין.");
-        }
-
-        if (resJson.status === 'success') {
-          return resJson.data;
-        } else {
-          throw new Error(resJson.message || "שגיאת שרת");
+        // Smart Diffing: עדכון המסך רק אם יש שינוי בהיסטוריה
+        const signature = JSON.stringify(messages);
+        if (signature !== lastMessagesSignature) {
+          lastMessagesSignature = signature;
+          renderMessages(messages);
         }
       } catch (err) {
-        console.error("API Error:", err);
-        throw err;
+        console.error('שגיאה בטעינת הודעות:', err);
       }
     }
 
-    let lastHistoryJson = "";
-    let isFetching = false;
-
-    async function fetchHistory(isBackground = true) {
-      if (isFetching) return;
-      isFetching = true;
-      try {
-        const history = await callApi('getHistory');
-        const historyJson = JSON.stringify(history);
-        
-        // מעדכן את המסך אך ורק אם באמת היו שינויים בנתונים (מונע ריצודים לחלוטין)
-        if (historyJson !== lastHistoryJson) {
-          renderChat(history);
-          lastHistoryJson = historyJson;
-        }
-        document.getElementById('typing-status').innerText = "מחובר 🟢";
-      } catch (err) {
-        if (!isBackground) {
-          document.getElementById('typing-status').innerText = "שגיאת חיבור 🔴";
-        }
-      } finally {
-        isFetching = false;
-      }
-    }
-
-    function renderChat(history) {
-      const chatBox = document.getElementById('chat-box');
-      if (!history || history.length === 0) {
-        chatBox.innerHTML = `<div class="text-center text-slate-400 py-10">השיחה ריקה כרגע. התחל לכתוב למטה!</div>`;
+    function renderMessages(messages) {
+      const container = document.getElementById('chatContainer');
+      container.innerHTML = '';
+      
+      if (messages.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 my-auto text-sm">אין הודעות בחדר כרגע. התחל שיחה חדשה!</div>`;
         return;
       }
 
-      let html = '';
-      history.forEach(item => {
-        const isMe = item.clientId === clientId;
-        html += `
-          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} gap-1">
-            <div class="max-w-xl bg-slate-100 border border-slate-200 rounded-2xl p-3 sm:p-3.5 shadow-sm flex flex-col gap-1.5">
-              <div class="text-sm sm:text-base text-slate-900 font-medium">${escapeHtml(item.original)}</div>
-              <div class="border-t border-slate-200 pt-1.5 text-sm sm:text-base text-emerald-800 font-semibold" dir="${item.sourceLang === 'he' ? 'ltr' : 'rtl'}">
-                ${escapeHtml(item.translated)}
-              </div>
-            </div>
-            <span class="text-[10px] text-slate-400 px-1">${item.time}</span>
+      messages.forEach(msg => {
+        const isHe = msg.originalLang === 'he';
+        const div = document.createElement('div');
+        div.className = `flex flex-col max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-sm bg-white border border-slate-200`;
+        
+        div.innerHTML = `
+          <div class="flex justify-between items-center mb-1 text-xs text-slate-500 border-b pb-1">
+            <span class="font-semibold text-indigo-700">${escapeHtml(msg.sender)}</span>
+            <span>${msg.timestamp}</span>
           </div>
+          <div class="text-sm text-slate-800 font-medium py-1">${escapeHtml(msg.he)}</div>
+          <div class="text-sm text-slate-600 font-medium py-1 border-t border-dashed border-slate-100 font-amharic" dir="ltr">${escapeHtml(msg.am)}</div>
         `;
+        container.appendChild(div);
       });
-
-      const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 100;
-      chatBox.innerHTML = html;
-      if (isAtBottom || chatBox.innerHTML.includes('טוען')) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+      
+      container.scrollTop = container.scrollHeight;
     }
 
-    async function sendMessage() {
-      const input = document.getElementById('message-input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      const sourceLang = document.querySelector('input[name="sourceLang"]:checked').value;
-      input.value = '';
-      document.getElementById('send-btn').disabled = true;
+    async function sendMessage(e) {
+      e.preventDefault();
+      const sender = document.getElementById('senderName').value;
+      const text = document.getElementById('msgText').value;
+      const lang = document.getElementById('msgLang').value;
+      
+      document.getElementById('msgText').value = '';
 
       try {
-        const history = await callApi('sendMessage', { text, sourceLang, clientId });
-        renderChat(history);
-        lastHistoryJson = JSON.stringify(history);
+        await fetch(`${WEB_APP_URL}?action=sendMessage&sender=${encodeURIComponent(sender)}&text=${encodeURIComponent(text)}&lang=${lang}`);
+        fetchMessages();
       } catch (err) {
-        alert("שגיאה בשליחת ההודעה: " + err.message);
-      } finally {
-        document.getElementById('send-btn').disabled = false;
-        input.focus();
+        console.error('שגיאה בשליחת הודעה:', err);
       }
     }
 
-    function handleKeyPress(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    }
-
-    function handleAdminKeyPress(e) {
-      if (e.key === 'Enter') {
-        clearChatAction();
-      }
-    }
-
-    function openAdminModal() {
-      document.getElementById('admin-modal').classList.remove('hidden');
-      document.getElementById('admin-password-input').value = '';
-      document.getElementById('admin-password-input').focus();
-    }
-
-    function closeAdminModal() {
-      document.getElementById('admin-modal').classList.add('hidden');
-    }
-
-    async function clearChatAction() {
-      const password = document.getElementById('admin-password-input').value;
-      if (!password) {
-        alert("נא להזין סיסמה");
-        return;
-      }
-
+    async function resetChatPrompt() {
+      const pwd = prompt('הכנס סיסמת מנהל לאיפוס החדר:');
+      if (!pwd) return;
+      
       try {
-        const history = await callApi('clearChat', { password });
-        renderChat(history);
-        lastHistoryJson = JSON.stringify(history);
-        closeAdminModal();
+        const res = await fetch(`${WEB_APP_URL}?action=resetChat&pwd=${encodeURIComponent(pwd)}`);
+        const result = await res.json();
+        if (result.status === 'success') {
+          alert('החדר אופס בהצלחה.');
+          fetchMessages();
+        } else {
+          alert('שגיאה: ' + result.message);
+        }
       } catch (err) {
-        alert("שגיאה: " + err.message);
+        alert('שגיאה בתקשורת מול השרת.');
       }
     }
 
     function escapeHtml(text) {
-      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-      return text.replace(/&amp;|&lt;|&gt;|&quot;|&#039;|&[<>"]/g, m => map[m] || m);
+      return text.replace(/&/g, "&amp;").replace(/lt;/g, "<").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // טעינה ראשונית מהירה
-    fetchHistory(false);
-    // בדיקת עדכונים ברקע כל 2.5 שניות בלי ריצודים
-    setInterval(() => fetchHistory(true), 2500);
+    // רענון אוטומטי כל 3 שניות
+    setInterval(fetchMessages, 3000);
+    fetchMessages();
   </script>
 </body>
 </html>
