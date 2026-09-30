@@ -91,6 +91,37 @@
     let isAdminAuthenticated = false;
     let cachedAdminPassword = '';
 
+    // יצירה או שליפה של מזהה מכשיר ייחודי לצורך הבחנה בצבעים
+    function getClientId() {
+      let clientId = localStorage.getItem('bridge_client_id');
+      if (!clientId) {
+        clientId = 'client_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('bridge_client_id', clientId);
+      }
+      return clientId;
+    }
+
+    const currentClientId = getClientId();
+
+    // פונקציה שמייצרת צבע עקבי לפי מזהה המכשיר
+    function getUserColorStyle(clientId) {
+      const themes = [
+        { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-800' },
+        { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-800' },
+        { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-800' },
+        { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-900', badge: 'bg-purple-100 text-purple-800' },
+        { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-900', badge: 'bg-rose-100 text-rose-800' },
+        { bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-900', badge: 'bg-teal-100 text-teal-800' }
+      ];
+      if (!clientId) return themes[0];
+      let hash = 0;
+      for (let i = 0; i < clientId.length; i++) {
+        hash = clientId.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % themes.length;
+      return themes[index];
+    }
+
     function getRoomId() {
       const params = new URLSearchParams(window.location.search);
       let roomId = params.get('room');
@@ -145,14 +176,17 @@
 
       let html = '';
       localHistory.forEach(item => {
+        const isMe = item.clientId === currentClientId;
+        const theme = getUserColorStyle(item.clientId);
+        
         html += `
-          <div class="flex flex-col items-start gap-1 bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-sm">
-            <div class="flex justify-between w-full text-xs text-indigo-700 font-bold">
-              <span>${item.sender || 'מערכת גשר שפות'}</span>
+          <div class="flex flex-col items-start gap-1 ${theme.bg} border ${theme.border} rounded-xl p-3 shadow-sm transition-all">
+            <div class="flex justify-between w-full text-xs font-bold">
+              <span class="${theme.text}">${isMe ? '👤 אני (מכשיר זה)' : '📱 משתתף נוסף'} <span class="text-[9px] font-normal opacity-60">(${item.clientId || 'gen'})</span></span>
               <span class="text-[10px] text-slate-400 font-normal">${item.time || ''}</span>
             </div>
             <div class="text-sm sm:text-base text-slate-900 font-medium" dir="auto">${escapeHtml(item.original)}</div>
-            <div class="border-t border-slate-200 pt-1.5 w-full text-sm sm:text-base text-indigo-900 font-semibold" dir="auto">
+            <div class="border-t border-slate-300/60 pt-1.5 w-full text-sm sm:text-base ${theme.text} font-semibold" dir="auto">
               ${escapeHtml(item.translated)}
             </div>
           </div>
@@ -180,13 +214,14 @@
         original: text,
         translated: "מעבד תרגום...",
         time: "עכשיו",
+        clientId: currentClientId,
         sender: "מערכת גשר שפות"
       };
       localHistory.push(tempItem);
       renderChat();
 
       try {
-        const newHistory = await callApi('sendMessage', { text });
+        const newHistory = await callApi('sendMessage', { text, clientId: currentClientId });
         localHistory = newHistory || [];
         renderChat();
       } catch (err) {
