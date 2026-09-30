@@ -86,10 +86,11 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyi9xbQ7LQOq0g05ZrBr9rZkoSDXhLcVOaT-thgXry50lxMF3CghDHZE_FZvjboJcAU/exec";
 
-    let localHistory = [];
+    let localHistory = null; // אתחול כ-null כדי לאלץ טעינה ראשונה חלקה
     let isSending = false;
     let isAdminAuthenticated = false;
     let cachedAdminPassword = '';
+    let isInitialLoad = true;
 
     // יצירה או שליפה של מזהה מכשיר ייחודי לצורך הבחנה בצבעים
     function getClientId() {
@@ -106,12 +107,12 @@
     // פונקציה שמייצרת צבע עקבי לפי מזהה המכשיר
     function getUserColorStyle(clientId) {
       const themes = [
-        { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-900', badge: 'bg-blue-100 text-blue-800' },
-        { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-800' },
-        { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-800' },
-        { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-900', badge: 'bg-purple-100 text-purple-800' },
-        { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-900', badge: 'bg-rose-100 text-rose-800' },
-        { bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-900', badge: 'bg-teal-100 text-teal-800' }
+        { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-900' },
+        { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-900' },
+        { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-900' },
+        { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-900' },
+        { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-900' },
+        { bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-900' }
       ];
       if (!clientId) return themes[0];
       let hash = 0;
@@ -158,7 +159,10 @@
       if (isSending) return;
       try {
         const history = await callApi('getHistory');
-        if (JSON.stringify(history) !== JSON.stringify(localHistory)) {
+        const historyJson = JSON.stringify(history || []);
+        
+        // מעדכן את המסך אך ורק אם יש שינוי אמיתי באורך ההיסטוריה או בתוכן שלה
+        if (historyJson !== JSON.stringify(localHistory)) {
           localHistory = history || [];
           renderChat();
         }
@@ -174,6 +178,9 @@
         return;
       }
 
+      // שמירת מצב הגלילה הנוכחי כדי למנוע קפיצות מסך מיותרות
+      const isScrolledToBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 120;
+
       let html = '';
       localHistory.forEach(item => {
         const isMe = item.clientId === currentClientId;
@@ -182,7 +189,7 @@
         html += `
           <div class="flex flex-col items-start gap-1 ${theme.bg} border ${theme.border} rounded-xl p-3 shadow-sm transition-all">
             <div class="flex justify-between w-full text-xs font-bold">
-              <span class="${theme.text}">${isMe ? '👤 אני (מכשיר זה)' : '📱 משתתף נוסף'} <span class="text-[9px] font-normal opacity-60">(${item.clientId || 'gen'})</span></span>
+              <span class="${theme.text}">${isMe ? '👤 אני (מכשיר זה)' : '📱 משתתף נוסף'}</span>
               <span class="text-[10px] text-slate-400 font-normal">${item.time || ''}</span>
             </div>
             <div class="text-sm sm:text-base text-slate-900 font-medium" dir="auto">${escapeHtml(item.original)}</div>
@@ -193,11 +200,12 @@
         `;
       });
 
-      const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 100;
       chatBox.innerHTML = html;
-      if (isAtBottom || !chatBox.dataset.scrolled) {
+
+      // גלילה אוטומטית רק בטעינה ראשונה או אם המשתמש היה כבר בתחתית השיחה
+      if (isInitialLoad || isScrolledToBottom) {
         chatBox.scrollTop = chatBox.scrollHeight;
-        chatBox.dataset.scrolled = "true";
+        isInitialLoad = false;
       }
     }
 
@@ -214,11 +222,16 @@
         original: text,
         translated: "מעבד תרגום...",
         time: "עכשיו",
-        clientId: currentClientId,
-        sender: "מערכת גשר שפות"
+        clientId: currentClientId
       };
+      
+      if (!localHistory) localHistory = [];
       localHistory.push(tempItem);
       renderChat();
+
+      // גלילה לתחתית מיד עם שליחת הודעה
+      const chatBox = document.getElementById('chat-box');
+      chatBox.scrollTop = chatBox.scrollHeight;
 
       try {
         const newHistory = await callApi('sendMessage', { text, clientId: currentClientId });
@@ -239,10 +252,8 @@
         showAdminControls();
         return;
       }
-
       const pwd = prompt("הכנס סיסמת מנהל:");
       if (!pwd) return;
-
       verifyAdminPassword(pwd);
     }
 
@@ -393,6 +404,7 @@
       return text.toString().replace(/[&<>"']/g, m => map[m]);
     }
 
+    // הפעלה ראשונית ורענון ברקע כל 3 שניות (ללא ריצוד)
     fetchHistory();
     setInterval(() => fetchHistory(true), 3000);
   </script>
