@@ -25,18 +25,17 @@
     <!-- הודעות יטענו כאן דינמית -->
   </main>
 
-  <!-- אזור הקלדה מעוגן בתחתית -->
+  <!-- אזור הקלדה מהיר מעוגן בתחתית -->
   <footer class="bg-white border-t border-slate-200 p-3 shadow-lg">
     <form id="chatForm" onsubmit="sendMessage(event)" class="flex flex-col sm:flex-row gap-2 max-w-4xl mx-auto">
       <div class="flex gap-2">
-        <input type="text" id="senderName" placeholder="שמך..." class="w-28 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-        <select id="msgLang" class="border border-slate-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select id="msgLang" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium">
           <option value="he">עברית ➔ אמהרית</option>
           <option value="am">אמהרית ➔ עברית</option>
         </select>
       </div>
       <div class="flex-1 flex gap-2">
-        <input type="text" id="msgText" placeholder="הקלד הודעה..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        <input type="text" id="msgText" placeholder="הקלד הודעה ולחץ Enter..." class="flex-1 border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required autofocus>
         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
           שליחה
         </button>
@@ -51,7 +50,6 @@
   </footer>
 
   <script>
-    // כתובת ה-Web App המעודכנת של Google Apps Script
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyi9xbQ7LQOq0g05ZrBr9rZkoSDXhLcVOaT-thgXry50lxMF3CghDHZE_FZvjboJcAU/exec';
     let lastMessagesSignature = '';
 
@@ -60,7 +58,6 @@
         const response = await fetch(`${WEB_APP_URL}?action=getMessages`);
         const messages = await response.json();
         
-        // Smart Diffing: עדכון המסך רק אם יש שינוי אמיתי בהיסטוריה
         const signature = JSON.stringify(messages);
         if (signature !== lastMessagesSignature) {
           lastMessagesSignature = signature;
@@ -85,12 +82,12 @@
         div.className = `flex flex-col max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-sm bg-white border border-slate-200`;
         
         div.innerHTML = `
-          <div class="flex justify-between items-center mb-1 text-xs text-slate-500 border-b pb-1">
-            <span class="font-semibold text-indigo-700">${escapeHtml(msg.sender)}</span>
+          <div class="flex justify-between items-center mb-1 text-xs text-slate-400 border-b pb-1">
+            <span>מערכת גשר שפות</span>
             <span>${msg.timestamp}</span>
           </div>
-          <div class="text-sm text-slate-800 font-medium py-1">${escapeHtml(msg.he)}</div>
-          <div class="text-sm text-slate-600 font-medium py-1 border-t border-dashed border-slate-100" dir="ltr">${escapeHtml(msg.am)}</div>
+          <div class="text-sm text-slate-800 font-medium py-1" dir="rtl">עברית: ${escapeHtml(msg.he)}</div>
+          <div class="text-sm text-indigo-600 font-medium py-1 border-t border-dashed border-slate-100" dir="ltr">አማርኛ: ${escapeHtml(msg.am)}</div>
         `;
         container.appendChild(div);
       });
@@ -99,20 +96,28 @@
     }
 
     async function sendMessage(e) {
-      e.preventDefault();
-      const sender = document.getElementById('senderName').value;
+      if (e) e.preventDefault();
       const text = document.getElementById('msgText').value;
       const lang = document.getElementById('msgLang').value;
       
+      if (!text.trim()) return;
       document.getElementById('msgText').value = '';
 
       try {
-        await fetch(`${WEB_APP_URL}?action=sendMessage&sender=${encodeURIComponent(sender)}&text=${encodeURIComponent(text)}&lang=${lang}`);
+        await fetch(`${WEB_APP_URL}?action=sendMessage&text=${encodeURIComponent(text)}&lang=${lang}`);
         fetchMessages();
       } catch (err) {
         console.error('שגיאה בשליחת הודעה:', err);
       }
     }
+
+    // תמיכה מלאה במקש Enter לשליחה מהירה
+    document.getElementById('msgText').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
 
     async function resetChatPrompt() {
       const pwd = prompt('הכנס סיסמת מנהל לאיפוס החדר:');
@@ -136,7 +141,6 @@
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // רענון אוטומטי כל 3 שניות
     setInterval(fetchMessages, 3000);
     fetchMessages();
   </script>
