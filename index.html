@@ -25,7 +25,6 @@
       <span class="text-[10px] text-indigo-100" id="room-display">טוען חדר...</span>
     </div>
     <div class="flex items-center gap-2">
-      <!-- כפתורי הניהול שמופיעים רק לאחר הזנת סיסמה מוצלחת -->
       <div id="admin-controls" class="flex items-center gap-1.5 bg-indigo-900/40 p-1 rounded-lg border border-white/20 hidden">
         <button onclick="copyCurrentRoomLink()" class="text-xs px-2 py-1.5 bg-indigo-600 rounded btn-action">קישור</button>
         <button onclick="openRoomsManager()" class="text-xs px-2 py-1.5 bg-amber-600 rounded btn-action">חדרים</button>
@@ -46,7 +45,6 @@
     </div>
   </main>
 
-  <!-- חתימה פדגוגית רשמית -->
   <footer class="bg-slate-100 border-t border-slate-200 py-1.5 px-3 text-center text-[10px] sm:text-xs text-slate-500 shrink-0">
     <div>היחידה לקידום נוער נוף הגליל | תוכנית היל"ה</div>
     <div class="font-medium text-slate-600">© תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי</div>
@@ -66,13 +64,11 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyI9xbQ7LQ0q0g05ZrBr9rZkoSDXhLcV0aT-thgXry50IxMF3CghDHZE_FZvjboJcAU/exec";
-    let localHistory = null, isSending = false, cachedAdminPassword = '';
+    let localHistory = [], isSending = false, cachedAdminPassword = '';
     const currentClientId = (localStorage.getItem('bridge_client_id_am') || 'c_' + Math.random().toString(36).substr(2, 9));
     localStorage.setItem('bridge_client_id_am', currentClientId);
 
-    localStorage.removeItem('bridge_admin_unlocked');
-
-    const escapeHtml = (t) => { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+    const escapeHtml = (t) => { const d = document.createElement('div'); d.textContent = t || ''; return d.innerHTML; };
 
     const getRoomId = () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -86,11 +82,7 @@
     let adminTimer;
     const titleEl = document.getElementById('app-title');
     
-    const startTimer = () => { 
-      adminTimer = setTimeout(() => { 
-        requestAdminAccess();
-      }, 3000); 
-    };
+    const startTimer = () => { adminTimer = setTimeout(requestAdminAccess, 3000); };
     titleEl.onmousedown = startTimer;
     titleEl.onmouseup = () => clearTimeout(adminTimer);
     titleEl.ontouchstart = startTimer;
@@ -106,7 +98,7 @@
         renderRoomsList(rooms);
         document.getElementById('rooms-modal').classList.remove('hidden');
       } catch (e) {
-        alert("סיסמה שגויה");
+        alert("סיסמה שגויה או שגיאת תקשורת");
         cachedAdminPassword = '';
       }
     }
@@ -118,7 +110,7 @@
       const q = new URLSearchParams({ action, roomId: currentRoomId, password: cachedAdminPassword, data: JSON.stringify(payload) });
       const res = await fetch(`${API_URL}?${q.toString()}`);
       const json = await res.json();
-      if (json.status !== 'success') throw new Error(json.message);
+      if (json.status !== 'success') throw new Error(json.message || 'Error from API');
       return json.data;
     }
 
@@ -126,19 +118,27 @@
       if (isSending) return;
       try {
         const history = await callApi('getHistory');
-        if (JSON.stringify(history) !== JSON.stringify(localHistory)) { localHistory = history; renderChat(); }
-      } catch (e) { console.error(e); }
+        if (Array.isArray(history)) {
+          if (JSON.stringify(history) !== JSON.stringify(localHistory)) { 
+            localHistory = history; 
+            renderChat(); 
+          }
+        }
+      } catch (e) { console.error("History fetch error:", e); }
     }
 
     function renderChat() {
       const box = document.getElementById('chat-box');
-      if (!localHistory?.length) { box.innerHTML = '<div class="text-center text-slate-400 mt-20 italic">אין הודעות.</div>'; return; }
+      if (!Array.isArray(localHistory) || !localHistory.length) { 
+        box.innerHTML = '<div class="text-center text-slate-400 mt-20 italic">אין הודעות.</div>'; 
+        return; 
+      }
       const shouldScroll = box.scrollHeight - box.scrollTop <= box.clientHeight + 150;
       box.innerHTML = localHistory.map(m => {
         const isMe = m.clientId === currentClientId;
         return `<div class="chat-message-wrapper ${isMe ? 'items-end' : 'items-start'}">
             <div class="chat-bubble ${isMe ? 'bg-indigo-600 text-white' : 'bg-white text-slate-800 border border-slate-200'}">
-              <div class="text-[9px] opacity-70 mb-1 flex justify-between gap-4"><span>${isMe ? 'אני' : 'משתתף'}</span><span>${m.time}</span></div>
+              <div class="text-[9px] opacity-70 mb-1 flex justify-between gap-4"><span>${isMe ? 'אני' : 'משתתף'}</span><span>${escapeHtml(m.time)}</span></div>
               <div class="text-sm">${escapeHtml(m.original)}</div>
               <div class="mt-2 pt-2 border-t ${isMe ? 'border-indigo-400/40 text-indigo-50' : 'border-slate-100 text-indigo-700'} font-semibold text-sm italic">${escapeHtml(m.translated)}</div>
             </div></div>`;
@@ -150,9 +150,21 @@
       const input = document.getElementById('message-input');
       const text = input.value.trim();
       if (!text || isSending) return;
-      isSending = true; input.value = ''; input.style.height = '';
-      try { localHistory = await callApi('sendMessage', { text, clientId: currentClientId }); renderChat(); }
-      catch (e) { alert(e.message); } finally { isSending = false; }
+      isSending = true; 
+      input.value = ''; 
+      input.style.height = '';
+      
+      try { 
+        const updatedHistory = await callApi('sendMessage', { text, clientId: currentClientId }); 
+        if (Array.isArray(updatedHistory)) {
+          localHistory = updatedHistory;
+          renderChat();
+        }
+      } catch (e) { 
+        alert("שגיאה בשליחת הודעה: " + e.message); 
+      } finally { 
+        isSending = false; 
+      }
     }
 
     async function openRoomsManager() {
@@ -167,12 +179,15 @@
 
     function renderRoomsList(rooms) {
       const container = document.getElementById('rooms-list-container');
-      if (!rooms?.length) { container.innerHTML = '<div class="text-center p-6 italic text-slate-400">אין חדרים פעילים.</div>'; return; }
+      if (!Array.isArray(rooms) || !rooms.length) { 
+        container.innerHTML = '<div class="text-center p-6 italic text-slate-400">אין חדרים פעילים.</div>'; 
+        return; 
+      }
       container.innerHTML = rooms.map(r => `
         <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div class="truncate flex-1">
-            <div class="text-xs font-bold text-indigo-700">${r.id}</div>
-            <div class="text-[10px] text-slate-500">${r.lastActive || ''}</div>
+            <div class="text-xs font-bold text-indigo-700">${escapeHtml(r.id)}</div>
+            <div class="text-[10px] text-slate-500">${escapeHtml(r.lastActive || '')}</div>
           </div>
           <div class="flex gap-1">
             <button onclick="copySpecificRoomLink('?room=${r.id}')" class="bg-slate-200 text-slate-700 text-[10px] px-2 py-1 rounded font-bold btn-action">העתק</button>
@@ -184,8 +199,10 @@
 
     async function deleteRoom(id) {
       if (confirm(`למחוק את חדר ${id}?`)) {
-        try { const rooms = await callApi('closeRoom', { targetRoomId: id }); renderRoomsList(rooms); }
-        catch (e) { alert(e.message); }
+        try { 
+          const rooms = await callApi('closeRoom', { targetRoomId: id }); 
+          renderRoomsList(rooms); 
+        } catch (e) { alert(e.message); }
       }
     }
 
@@ -200,7 +217,7 @@
     window.onload = () => {
         document.getElementById('message-input').focus();
         fetchHistory(); 
-        setInterval(fetchHistory, 4000);
+        setInterval(fetchHistory, 3000);
     };
   </script>
 </body>
