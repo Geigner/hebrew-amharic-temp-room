@@ -207,15 +207,14 @@
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🟢 מומלץ ליצור פרויקט נפרד ב-Firebase עבור אמהרית, ולהדביק כאן את ההגדרות החדשות
+    // 🟢 מפתחות החיבור המעודכנים לפרויקט האמהרי
     const firebaseConfig = {
-      apiKey: "AIzaSyBvcY2Rm-kkbVtPUUsclpN_I-z0V7-AnEY",
-      authDomain: "hebrew-amharic.firebaseapp.com",
-      projectId: "hebrew-amharic",
-      storageBucket: "hebrew-amharic.firebasestorage.app",
-      messagingSenderId: "540341284755",
-      appId: "1:540341284755:web:4c9847f131c494a775c266",
-      measurementId: "G-Y8ZNNK7HFS"
+      apiKey: "AIzaSyBLjqBXkP8KVHPQzYXczeRvw09qT01-ySE",
+      authDomain: "hebrew-amharic-71f5d.firebaseapp.com",
+      projectId: "hebrew-amharic-71f5d",
+      storageBucket: "hebrew-amharic-71f5d.firebasestorage.app",
+      messagingSenderId: "701170625071",
+      appId: "1:701170625071:web:8f3e6c9584cb7a823ff4da"
     };
 
     // אתחול Firebase
@@ -334,7 +333,6 @@
       }
 
       let html = '';
-      history.history = history || [];
       history.forEach(msg => {
         const bubbleStyleClass = getClientBubbleClass(msg.clientId);
         const isHebrewSource = (msg.sourceLang === 'he');
