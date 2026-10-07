@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>גשר שפות עברית אמהרית</title>
+  <title>גשר שפות עברית אמהרית – ניהול חדרים</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -63,6 +63,53 @@
     .btn-new-room { background-color: #27ae60; }
     .btn-reset { background-color: #e74c3c; }
 
+    /* פאנל ניהול חדרים מרכזי */
+    .admin-panel {
+      background: #edf2f7;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: none;
+      font-size: 13px;
+    }
+    .admin-panel h3 {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #1B365D;
+    }
+    .rooms-list {
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .room-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .room-item a {
+      color: #1B365D;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .room-item a:hover { text-decoration: underline; }
+    .btn-del-room {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
     .chat-stream {
       flex: 1;
       overflow-y: auto;
@@ -97,8 +144,6 @@
 
     .original-text { font-weight: 600; margin-bottom: 4px; }
     .translated-text { color: #4a5568; font-size: 13px; border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 4px; }
-    
-    /* תיקון נגישות: צבע כהה יותר לעמידה בתקן ניגודיות 4.5:1 */
     .msg-time { 
       font-size: 10px; 
       color: #55606e; 
@@ -170,14 +215,21 @@
 </head>
 <body>
 
-  <!-- סמנטיקה: שימוש ב-main עבור קוראי מסך -->
   <main class="container">
     <div class="header-title">
       <span id="roomTitle">🗣️ גשר שפות עברית אמהרית – חדר שיחה רגעי</span>
       <div class="admin-controls">
         <button id="adminBtn" class="btn-admin">🔐 מנהל</button>
         <button id="newRoomBtn" class="btn-new-room">🔗 צור קישור לשיחה חדשה</button>
-        <button id="resetBtn" class="btn-reset">🗑️ נקה חדר</button>
+        <button id="resetBtn" class="btn-reset">🗑️ נקה חדר נוכחי</button>
+      </div>
+    </div>
+
+    <!-- פאנל ניהול המרכז את כל החדרים הפעילים -->
+    <div id="adminPanel" class="admin-panel">
+      <h3>📂 ניהול חדרים פעילים במערכת</h3>
+      <div id="activeRoomsList" class="rooms-list">
+        <div style="text-align: center; color: #718096; font-size: 12px;">טוען חדרים...</div>
       </div>
     </div>
 
@@ -207,7 +259,6 @@
     </footer>
   </main>
 
-  <!-- טעינת ה-SDK של Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -220,6 +271,7 @@
       getDocs, 
       deleteDoc, 
       doc, 
+      setDoc,
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -317,7 +369,7 @@
     }
 
     async function resetChat() {
-      const pwd = prompt("הכנס סיסמה לאיפוס החדר הרגעי:");
+      const pwd = prompt("הכנס סיסמה לאיפוס החדר הנוכחי:");
       if (pwd !== "1234") {
         alert("סיסמה שגויה!");
         return;
@@ -328,6 +380,7 @@
         snapshot.forEach(async (document) => {
           await deleteDoc(doc(db, "rooms", currentRoom, "messages", document.id));
         });
+        alert("החדר נוקה בהצלחה.");
       } catch (e) {
         console.error("Error resetting chat:", e);
       }
@@ -393,28 +446,90 @@
       });
     });
 
-    document.getElementById('adminBtn').addEventListener('click', () => {
+    // כפתור מנהל והצגת הפאנל
+    document.getElementById('adminBtn').addEventListener('click', async () => {
       const pwd = prompt("הכנס סיסמת מנהל:");
       if (pwd === "1234") {
         document.getElementById('adminBtn').style.display = 'none';
         document.getElementById('newRoomBtn').style.display = 'inline-block';
         document.getElementById('resetBtn').style.display = 'inline-block';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        loadActiveRooms();
         alert("התחברת כמנהל בהצלחה!");
       } else {
         alert("סיסמה שגויה.");
       }
     });
 
-    document.getElementById('newRoomBtn').addEventListener('click', () => {
+    // טעינת רשימת החדרים הפעילים מתוך פיירבייס
+    async function loadActiveRooms() {
+      const listContainer = document.getElementById('activeRoomsList');
+      try {
+        const querySnapshot = await getDocs(collection(db, "rooms_list"));
+        if (querySnapshot.empty) {
+          listContainer.innerHTML = '<div style="text-align: center; color: #718096; font-size: 12px;">אין חדרים רשומים במערכת עדיין.</div>';
+          return;
+        }
+
+        let html = '';
+        querySnapshot.forEach((docSnap) => {
+          const roomData = docSnap.data();
+          html += `
+            <div class="room-item">
+              <div>
+                <a href="?room=${roomData.roomId}" target="_blank">🔗 ${roomData.roomId}</a>
+                <span style="font-size: 10px; color: #718096; margin-right: 8px;">(${roomData.createdAt || ''})</span>
+              </div>
+              <button class="btn-del-room" onclick="window.deleteSystemRoom('${roomData.roomId}')">מחק מרישום</button>
+            </div>`;
+        });
+        listContainer.innerHTML = html;
+      } catch (e) {
+        console.error("Error loading rooms:", e);
+        listContainer.innerHTML = '<div style="color: #e74c3c; font-size: 12px;">שגיאה בטעינת החדרים.</div>';
+      }
+    }
+
+    // פונקציה גלובלית למחיקת חדר מהרישום
+    window.deleteSystemRoom = async function(roomId) {
+      if (!confirm(`האם אתה בטוח שברצונך למחוק את החדר ${roomId} מהרישום?`)) return;
+      try {
+        await deleteDoc(doc(db, "rooms_list", roomId));
+        alert("החדר הוסר מהרשימה.");
+        loadActiveRooms();
+      } catch (e) {
+        console.error("Error deleting room:", e);
+        alert("שגיאה במחיקת החדר.");
+      }
+    };
+
+    // יצירת חדר חדש ושמירתו ברישום המרכזי
+    document.getElementById('newRoomBtn').addEventListener('click', async () => {
       const randomRoomId = 'room_' + Math.floor(Math.random() * 90000 + 10000);
       const baseUrl = window.location.href.split('?')[0];
       const newRoomUrl = baseUrl + '?room=' + randomRoomId;
       
-      navigator.clipboard.writeText(newRoomUrl).then(function() {
-        prompt("נוצר קישור חדש ונקי לשיחה! הקישור הועתק ללוח. העבר אותו לתלמיד:", newRoomUrl);
-      }, function() {
-        prompt("הנה הקישור החדש לשיחה (העתק ידנית):", newRoomUrl);
-      });
+      const nowStr = new Date().toLocaleDateString('he-IL') + ' ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+      try {
+        // שמירת החדר בקอลקשן המרכזי לניהול
+        await setDoc(doc(db, "rooms_list", randomRoomId), {
+          roomId: randomRoomId,
+          createdAt: nowStr
+        });
+
+        loadActiveRooms();
+
+        navigator.clipboard.writeText(newRoomUrl).then(function() {
+          prompt("נוצר קישור חדש ונקי! הקישור הועתק ללוח. העבר אותו לתלמיד:", newRoomUrl);
+        }, function() {
+          prompt("הנה הקישור החדש לשיחה (העתק ידנית):", newRoomUrl);
+        });
+      } catch (e) {
+        console.error("Error saving room to list:", e);
+        alert("שגיאה ביצירת החדר בענן.");
+      }
     });
   </script>
 </body>
