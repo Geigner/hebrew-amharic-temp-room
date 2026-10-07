@@ -75,6 +75,14 @@
       flex-direction: column;
       gap: 10px;
     }
+    /* תיקון נגישות: ניגודיות משופרת לטקסט הסטטוס בתוך הזרם */
+    .chat-stream .status-msg {
+      text-align: center;
+      color: #4a5568; 
+      font-size: 12px;
+      margin-top: 20px;
+    }
+
     .message-bubble {
       max-width: 85%;
       padding: 10px 14px;
@@ -90,7 +98,7 @@
 
     .original-text { font-weight: 600; margin-bottom: 4px; }
     .translated-text { color: #4a5568; font-size: 13px; border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 4px; }
-    .msg-time { font-size: 10px; color: #a0aec0; text-align: left; margin-top: 2px; }
+    .msg-time { font-size: 10px; color: #718096; text-align: left; margin-top: 2px; }
     
     .input-section {
       background: #fff;
@@ -155,7 +163,8 @@
 </head>
 <body>
 
-  <div class="container">
+  <!-- תיקון סמנטיקה: שימוש ב-main עבור נגישות וקוראי מסך -->
+  <main class="container">
     <div class="header-title">
       <span id="roomTitle">🗣️ גשר שפות עברית אמהרית – חדר שיחה רגעי</span>
       <div class="admin-controls">
@@ -166,7 +175,7 @@
     </div>
 
     <div id="chatStream" class="chat-stream">
-      <div style="text-align: center; color: #a0aec0; font-size: 12px; margin-top: 20px;">
+      <div class="status-msg">
         מתחבר ל-Firebase...
       </div>
     </div>
@@ -189,7 +198,7 @@
       <div><strong>היחידה לקידום נוער נוף הגליל</strong> | תוכנית היל"ה</div>
       <div>© תשפ"ז | גיא אייגנר – מנהל השכלה | פיתוח וניהול פדגוגי</div>
     </footer>
-  </div>
+  </main>
 
   <!-- טעינת ה-SDK של Firebase -->
   <script type="module">
@@ -207,7 +216,6 @@
       serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🟢 מפתחות החיבור המעודכנים לפרויקט האמהרי
     const firebaseConfig = {
       apiKey: "AIzaSyBLjqBXkP8KVHPQzYXczeRvw09qT01-ySE",
       authDomain: "hebrew-amharic-71f5d.firebaseapp.com",
@@ -217,11 +225,9 @@
       appId: "1:701170625071:web:8f3e6c9584cb7a823ff4da"
     };
 
-    // אתחול Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ניהול חדר ולקוח
     const urlParams = new URLSearchParams(window.location.search);
     let currentRoom = urlParams.get('room') || 'general_room';
     
@@ -247,7 +253,6 @@
       return clientColorMap[id];
     }
 
-    // 🟢 האזנה בזמן אמת להודעות
     const roomRef = collection(db, "rooms", currentRoom, "messages");
     const q = query(roomRef, orderBy("createdAt", "asc"));
 
@@ -259,7 +264,6 @@
       renderChat(messages);
     });
 
-    // 🌐 פונקציית תרגום
     async function translateText(text, sourceLang, targetLang) {
       try {
         const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`);
@@ -271,7 +275,6 @@
       }
     }
 
-    // שליחת הודעה
     async function sendText() {
       const inputElem = document.getElementById('mainInput');
       const sendBtn = document.getElementById('sendBtn');
@@ -306,7 +309,6 @@
       }
     }
 
-    // ניקוי חדר
     async function resetChat() {
       const pwd = prompt("הכנס סיסמה לאיפוס החדר הרגעי:");
       if (pwd !== "1234") {
@@ -324,11 +326,10 @@
       }
     }
 
-    // הצגת הצ'אט במסך
     function renderChat(history) {
       const chatStream = document.getElementById('chatStream');
       if (!history || history.length === 0) {
-        chatStream.innerHTML = '<div style="text-align: center; color: #a0aec0; font-size: 12px; margin-top: 20px;">החדר נקי. אפשר להתחיל להקליד...</div>';
+        chatStream.innerHTML = '<div class="status-msg">החדר נקי. אפשר להתחיל להקליד...</div>';
         return;
       }
 
@@ -362,7 +363,6 @@
       return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
     }
 
-    // חיבור אירועים
     document.getElementById('sendBtn').addEventListener('click', sendText);
     document.getElementById('resetBtn').addEventListener('click', resetChat);
 
