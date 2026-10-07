@@ -75,8 +75,7 @@
       flex-direction: column;
       gap: 10px;
     }
-    /* תיקון נגישות: ניגודיות משופרת לטקסט הסטטוס בתוך הזרם */
-    .chat-stream .status-msg {
+    .status-msg {
       text-align: center;
       color: #4a5568; 
       font-size: 12px;
@@ -98,7 +97,15 @@
 
     .original-text { font-weight: 600; margin-bottom: 4px; }
     .translated-text { color: #4a5568; font-size: 13px; border-top: 1px dashed #cbd5e1; padding-top: 4px; margin-top: 4px; }
-    .msg-time { font-size: 10px; color: #718096; text-align: left; margin-top: 2px; }
+    
+    /* תיקון נגישות: צבע כהה יותר לעמידה בתקן ניגודיות 4.5:1 */
+    .msg-time { 
+      font-size: 10px; 
+      color: #55606e; 
+      text-align: left; 
+      margin-top: 2px; 
+      font-weight: 500;
+    }
     
     .input-section {
       background: #fff;
@@ -163,7 +170,7 @@
 </head>
 <body>
 
-  <!-- תיקון סמנטיקה: שימוש ב-main עבור נגישות וקוראי מסך -->
+  <!-- סמנטיקה: שימוש ב-main עבור קוראי מסך -->
   <main class="container">
     <div class="header-title">
       <span id="roomTitle">🗣️ גשר שפות עברית אמהרית – חדר שיחה רגעי</span>
