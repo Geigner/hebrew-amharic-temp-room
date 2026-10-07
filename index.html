@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>גשר שפות עברית אמהרית – ניהול חדרים</title>
+  <title>גשר שפות עברית אמהרית – ניהול חדרים מתקדם</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -79,11 +79,11 @@
       color: #1B365D;
     }
     .rooms-list {
-      max-height: 120px;
+      max-height: 140px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
     }
     .room-item {
       display: flex;
@@ -93,22 +93,39 @@
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid #e2e8f0;
+      gap: 10px;
+    }
+    .room-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      overflow: hidden;
     }
     .room-item a {
       color: #1B365D;
       text-decoration: none;
       font-weight: 600;
+      white-space: nowrap;
     }
     .room-item a:hover { text-decoration: underline; }
-    .btn-del-room {
-      background: #e74c3c;
-      color: white;
+    
+    .room-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .btn-room-action {
       border: none;
-      padding: 2px 6px;
+      padding: 3px 6px;
       border-radius: 4px;
       font-size: 10px;
       cursor: pointer;
+      color: white;
+      font-weight: 600;
     }
+    .btn-action-go { background: #3182ce; }
+    .btn-action-reset { background: #d69e2e; }
+    .btn-action-del { background: #e53e3e; }
 
     .chat-stream {
       flex: 1;
@@ -225,7 +242,7 @@
       </div>
     </div>
 
-    <!-- פאנל ניהול המרכז את כל החדרים הפעילים -->
+    <!-- פאנל ניהול המרכז את כל החדרים הפעילים עם האפשרויות החדשות -->
     <div id="adminPanel" class="admin-panel">
       <h3>📂 ניהול חדרים פעילים במערכת</h3>
       <div id="activeRoomsList" class="rooms-list">
@@ -477,11 +494,15 @@
           const roomData = docSnap.data();
           html += `
             <div class="room-item">
-              <div>
-                <a href="?room=${roomData.roomId}" target="_blank">🔗 ${roomData.roomId}</a>
-                <span style="font-size: 10px; color: #718096; margin-right: 8px;">(${roomData.createdAt || ''})</span>
+              <div class="room-info">
+                <a href="?room=${roomData.roomId}">🔗 ${roomData.roomId}</a>
+                <span style="font-size: 10px; color: #718096;">(${roomData.createdAt || ''})</span>
               </div>
-              <button class="btn-del-room" onclick="window.deleteSystemRoom('${roomData.roomId}')">מחק מרישום</button>
+              <div class="room-actions">
+                <button class="btn-room-action btn-action-go" onclick="window.location.search='?room=${roomData.roomId}'" title="עבור לחדר זה">מעבר</button>
+                <button class="btn-room-action btn-action-reset" onclick="window.resetSystemRoom('${roomData.roomId}')" title="אפס הודעות בחדר">אפס</button>
+                <button class="btn-room-action btn-action-del" onclick="window.deleteSystemRoom('${roomData.roomId}')" title="מחק לגמרי את החדר והרישום">מחק</button>
+              </div>
             </div>`;
         });
         listContainer.innerHTML = html;
@@ -491,16 +512,48 @@
       }
     }
 
-    // פונקציה גלובלית למחיקת חדר מהרישום
-    window.deleteSystemRoom = async function(roomId) {
-      if (!confirm(`האם אתה בטוח שברצונך למחוק את החדר ${roomId} מהרישום?`)) return;
+    // 1. מעבר לחדר (כבר מטופל ישירות בקישור או בלחצן מעבר)
+
+    // 2. איפוס הודעות של חדר ספציפי מתוך הרשימה
+    window.resetSystemRoom = async function(roomId) {
+      if (!confirm(`האם אתה בטוח שברצונך לאפס (למחוק את כל ההודעות ב-) חדר ${roomId}?`)) return;
       try {
-        await deleteDoc(doc(db, "rooms_list", roomId));
-        alert("החדר הוסר מהרשימה.");
-        loadActiveRooms();
+        const msgRef = collection(db, "rooms", roomId, "messages");
+        const snapshot = await getDocs(msgRef);
+        snapshot.forEach(async (document) => {
+          await deleteDoc(doc(db, "rooms", roomId, "messages", document.id));
+        });
+        alert(`החדר ${roomId} אופס בהצלחה (ההודעות נמחקו).`);
       } catch (e) {
-        console.error("Error deleting room:", e);
-        alert("שגיאה במחיקת החדר.");
+        console.error("Error resetting room messages:", e);
+        alert("שגיאה באיפוס הודעות החדר.");
+      }
+    };
+
+    // 3. מחיקה מלאה: גם מחיקת כל ההודעות שלו וגם הסרה מרשימת החדרים
+    window.deleteSystemRoom = async function(roomId) {
+      if (!confirm(`⚠️ אזהרה: פעולה זו תמחק לגמרי את כל ההודעות בחדר ${roomId} ותסיר אותו מהמערכת. להמשיך?`)) return;
+      try {
+        // מחיקת כל ההודעות בתוך החדר
+        const msgRef = collection(db, "rooms", roomId, "messages");
+        const snapshot = await getDocs(msgRef);
+        snapshot.forEach(async (document) => {
+          await deleteDoc(doc(db, "rooms", roomId, "messages", document.id));
+        });
+
+        // מחיקת רישום החדר מה-rooms_list
+        await deleteDoc(doc(db, "rooms_list", roomId));
+
+        alert("החדר והודעותיו נמחקו לצמיתות מהמערכת.");
+        loadActiveRooms();
+
+        // אם המשתמש נמצא כרגע בחדר שנמחק, רענן או החזר לכללי
+        if (currentRoom === roomId) {
+          window.location.href = window.location.pathname;
+        }
+      } catch (e) {
+        console.error("Error deleting room completely:", e);
+        alert("שגיאה במחיקת החדר המלאה.");
       }
     };
 
@@ -513,7 +566,6 @@
       const nowStr = new Date().toLocaleDateString('he-IL') + ' ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
       try {
-        // שמירת החדר בקอลקשן המרכזי לניהול
         await setDoc(doc(db, "rooms_list", randomRoomId), {
           roomId: randomRoomId,
           createdAt: nowStr
