@@ -6,7 +6,7 @@
     <title>גשר שפות עברית 🇮🇱 ⇄ 🇪🇹 אמהרית - ניהול מערכת</title>
     <style>
         :root {
-            --primary-color: #7c2d12; /* גוון חום-אדמה חם לממשק האמהרי */
+            --primary-color: #7c2d12;
             --secondary-color: #ea580c;
             --bg-color: #f1f5f9;
             --card-bg: #ffffff;
@@ -403,12 +403,12 @@
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, setDoc, deleteDoc, doc, getDocs, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBq_hHRhuFu6QfvxdkrN_S0rK17hZskIfo",
-            authDomain: "hebrew-french.firebaseapp.com",
-            projectId: "hebrew-french",
-            storageBucket: "hebrew-french.firebasestorage.app",
-            messagingSenderId: "1027136444686",
-            appId: "1:1027136444686:web:e02cc664abd4c1fc8adf5f"
+            apiKey: "AIzaSyBLjqBXkP8KVHPQzYXczeRvw09qT01-ySE",
+            authDomain: "hebrew-amharic-71f5d.firebaseapp.com",
+            projectId: "hebrew-amharic-71f5d",
+            storageBucket: "hebrew-amharic-71f5d.firebasestorage.app",
+            messagingSenderId: "701170625071",
+            appId: "1:701170625071:web:8f3e6c9584cb7a823ff4da"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -434,7 +434,7 @@
             const inputAreaBox = document.getElementById('input-area-box');
             const connectionBadge = document.getElementById('connection-badge');
             const typingStatus = document.getElementById('typing-status');
-            const roomDocRef = doc(db, "rooms-amharic", roomId);
+            const roomDocRef = doc(db, "rooms", roomId);
 
             onSnapshot(roomDocRef, (docSnap) => {
                 connectionBadge.innerHTML = '🟢 מחובר לענן';
@@ -465,7 +465,7 @@
                 connectionBadge.innerHTML = '🔴 בעיית חיבור';
             });
 
-            const messagesRef = collection(db, "rooms-amharic", roomId, "messages");
+            const messagesRef = collection(db, "rooms", roomId, "messages");
             const q = query(messagesRef, orderBy("timestamp", "asc"));
 
             onSnapshot(q, (snapshot) => {
@@ -657,7 +657,7 @@
                 }
                 
                 try {
-                    const roomDocRef = doc(db, "rooms-amharic", roomName);
+                    const roomDocRef = doc(db, "rooms", roomName);
                     await setDoc(roomDocRef, { 
                         createdAt: serverTimestamp(),
                         roomName: roomName 
@@ -692,7 +692,7 @@
                 container.innerHTML = '<p style="color: #64748b; font-size: 0.9rem;">טוען חדרים מהענן...</p>';
 
                 try {
-                    const roomsSnapshot = await getDocs(collection(db, "rooms-amharic"));
+                    const roomsSnapshot = await getDocs(collection(db, "rooms"));
                     container.innerHTML = '';
 
                     if (roomsSnapshot.empty) {
@@ -730,7 +730,7 @@
             window.resetRoomMessages = async function(roomDocId) {
                 if (confirm(`האם אתה בטוח שברצונך לאפס את השיחה בחדר "${roomDocId}"? כל ההודעות הקודמות יימחקו, אך הקישור יישאר פעיל.`)) {
                     try {
-                        const messagesRef = collection(db, "rooms-amharic", roomDocId, "messages");
+                        const messagesRef = collection(db, "rooms", roomDocId, "messages");
                         const snapshot = await getDocs(messagesRef);
                         
                         const batch = writeBatch(db);
@@ -750,7 +750,7 @@
             window.deleteRoom = async function(roomDocId) {
                 if (confirm(`האם אתה בטוח שברצונך למחוק את החדר "${roomDocId}" וכל ההיסטוריה שלו?`)) {
                     try {
-                        await deleteDoc(doc(db, "rooms-amharic", roomDocId));
+                        await deleteDoc(doc(db, "rooms", roomDocId));
                         alert("החדר נמחק בהצלחה!");
                         loadActiveRooms();
                     } catch (e) {
