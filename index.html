@@ -432,7 +432,8 @@
                     const isHebrew = data.originalLang === 'he';
                     msgDiv.className = `message ${isHebrew ? 'hebrew' : 'amharic'}`;
                     
-                    const textToSpeak = isHebrew ? data.translatedText : data.originalText;
+                    // תוקן: תמיד מקריאים את התרגום בשפה הנגדית
+                    const textToSpeak = data.translatedText; 
                     const speakLang = isHebrew ? 'am-ET' : 'he-IL';
                     const author = data.author || "אורח/ת";
 
@@ -455,7 +456,6 @@
                 }, 100);
             });
 
-            // מנגנון הקראה קולית חכם עם איתור קול מדויק לפי שפה
             window.speakText = function(text, langCode) {
                 if (!('speechSynthesis' in window)) {
                     alert("דפדפן זה אינו תומך בהקראה קולית.");
@@ -467,7 +467,6 @@
                 utterance.lang = langCode;
                 utterance.rate = 0.9;
 
-                // חיפוש ובחירת הקול המתאים ביותר מתוך רשימת הקולות של המכשיר
                 const voices = window.speechSynthesis.getVoices();
                 const targetVoice = voices.find(voice => voice.lang.startsWith(langCode.slice(0, 2)));
                 
@@ -478,7 +477,6 @@
                 window.speechSynthesis.speak(utterance);
             };
 
-            // טעינה מוקדמת של הקולות בדפדפן (נדרש בחלק מהדפדפנים כדי שהרשימה לא תהיה ריקה)
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.onvoiceschanged = () => {
                     window.speechSynthesis.getVoices();
